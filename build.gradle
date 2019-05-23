@@ -1,0 +1,145 @@
+plugins {
+    id 'application'
+    id 'jacoco'
+    id 'maven-publish'
+    id 'org.sonarqube' version '2.7'
+    id 'signing'
+}
+
+group = 'io.github.henryssondaniel.teacup.service.visualization'
+version = '1.0.0-SNAPSHOT'
+
+application {
+    mainClassName = 'io.github.henryssondaniel.teacup.service.visualization.mysql.Main'
+}
+
+sourceSets {
+    intTest {
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += sourceSets.main.output
+    }
+}
+
+task integrationTest(type: Test) {
+    description = 'Runs integration tests.'
+    group = 'verification'
+
+    testClassesDirs = sourceSets.intTest.output.classesDirs
+    classpath = sourceSets.intTest.runtimeClasspath
+    shouldRunAfter test
+}
+
+task integrationTestReport(type: JacocoReport) {
+    executionData integrationTest
+    sourceSets sourceSets.intTest
+}
+
+task javadocJar(type: Jar) {
+    from javadoc
+    archiveClassifier = 'javadoc'
+}
+
+task sourcesJar(type: Jar) {
+    from sourceSets.main.allJava
+    archiveClassifier = 'sources'
+}
+
+check.dependsOn integrationTest
+jacocoTestReport.dependsOn integrationTestReport
+
+tasks.withType(Test) {
+    useJUnitPlatform()
+
+    testLogging {
+        showStandardStreams = true
+    }
+}
+
+configurations {
+    intTestImplementation.extendsFrom implementation
+    intTestRuntimeOnly.extendsFrom runtimeOnly
+}
+
+dependencies {
+    compile 'mysql:mysql-connector-java:8.0.16'
+    testImplementation 'org.assertj:assertj-core:3.12.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.4.2'
+    testImplementation 'org.mockito:mockito-core:2.27.0'
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            artifact sourcesJar
+            artifact javadocJar
+
+            versionMapping {
+                usage('java-api') {
+                    fromResolutionOf('runtimeClasspath')
+                }
+
+                usage('java-runtime') {
+                    fromResolutionResult()
+                }
+            }
+
+            pom {
+                name = project.group + ':' + project.name
+                description = 'MySQL visualization service'
+                url = 'https://github.com/HenryssonDaniel/teacup-service-visualization-mysql-java'
+
+                licenses {
+                    license {
+                        name = 'MIT License'
+                        url = 'http://www.opensource.org/licenses/mit-license.php'
+                    }
+                }
+
+                developers {
+                    developer {
+                        name = 'Daniel Henrysson'
+                        email = 'henrysson.daniel@gmail.com'
+                        organization = 'Daniel Henrysson AB'
+                        organizationUrl = 'https://github.com/HenryssonDaniel'
+                    }
+                }
+
+                scm {
+                    connection = 'scm:git:git://github.com/HenryssonDaniel/teacup-service-visualization-mysql-java.git'
+                    developerConnection = 'scm:git:ssh://github.com/HenryssonDaniel/teacup-service-visualization-mysql-java.git'
+                    url = 'https://github.com/HenryssonDaniel/teacup-service-visualization-mysql-java'
+                }
+            }
+        }
+    }
+    repositories {
+        maven {
+            def repoUrl = "https://oss.sonatype.org/"
+            def releasesRepoUrl = repoUrl + "service/local/staging/deploy/maven2"
+            def snapshotsRepoUrl = repoUrl + "content/repositories/snapshots"
+            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+
+            if (project.hasProperty('ossrhUsername')) {
+                credentials {
+                    username = ossrhUsername
+                    password = ossrhPassword
+                }
+            }
+        }
+    }
+}
+
+repositories {
+    jcenter()
+}
+
+signing {
+    sign publishing.publications.mavenJava
+}
+
+sonarqube {
+    properties {
+        property "sonar.projectKey", "HenryssonDaniel_teacup-service-visualization-mysql-java"
+    }
+}
