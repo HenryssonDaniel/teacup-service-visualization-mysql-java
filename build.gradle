@@ -1,17 +1,14 @@
 plugins {
-    id 'application'
     id 'jacoco'
     id 'maven-publish'
+    id 'org.gretty' version '2.3.1'
     id 'org.sonarqube' version '2.7'
     id 'signing'
+    id 'war'
 }
 
 group = 'io.github.henryssondaniel.teacup.service.visualization'
 version = '1.0.0-SNAPSHOT'
-
-application {
-    mainClassName = 'io.github.henryssondaniel.teacup.service.visualization.mysql.Main'
-}
 
 sourceSets {
     intTest {
@@ -62,6 +59,9 @@ configurations {
 
 dependencies {
     compile 'mysql:mysql-connector-java:8.0.16'
+    compile 'org.jboss.resteasy:resteasy-jaxrs:3.7.0.Final'
+    compile 'org.jboss.resteasy:resteasy-servlet-initializer:4.0.0.Final'
+    implementation 'io.github.henryssondaniel.teacup:core:1.1.2-SNAPSHOT'
     testImplementation 'org.assertj:assertj-core:3.12.2'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.4.2'
     testImplementation 'org.mockito:mockito-core:2.27.0'
@@ -131,7 +131,9 @@ publishing {
 }
 
 repositories {
+    mavenLocal()
     jcenter()
+    maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
 }
 
 signing {
