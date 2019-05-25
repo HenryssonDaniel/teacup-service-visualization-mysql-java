@@ -76,31 +76,6 @@ public class RestApplication extends Application {
     }
   }
 
-  private static void createAccountStatus(Connection connection) throws SQLException {
-    try (var statement = connection.createStatement()) {
-      statement.execute(
-          "CREATE TABLE IF NOT EXISTS `teacup_visualization`.`account_status` ("
-              + "  `account` INT UNSIGNED NOT NULL,"
-              + "  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,"
-              + "  `status` INT UNSIGNED NOT NULL,"
-              + "  `time` DATETIME(3) NOT NULL DEFAULT now(3),"
-              + "  PRIMARY KEY (`id`),"
-              + "  UNIQUE INDEX `id_UNIQUE` (`id` ASC) VISIBLE,"
-              + "  INDEX `account_status.account_idx` (`account` ASC) VISIBLE,"
-              + "  INDEX `account_status.status_idx` (`status` ASC) VISIBLE,"
-              + "  CONSTRAINT `account_status.account`"
-              + "    FOREIGN KEY (`account`)"
-              + "    REFERENCES `teacup_visualization`.`account` (`id`)"
-              + "    ON DELETE NO ACTION"
-              + "    ON UPDATE NO ACTION,"
-              + "  CONSTRAINT `account_status.status`"
-              + "    FOREIGN KEY (`status`)"
-              + "    REFERENCES `teacup_visualization`.`status` (`id`)"
-              + "    ON DELETE NO ACTION"
-              + "    ON UPDATE NO ACTION);");
-    }
-  }
-
   private static void createLogIn(Connection connection) throws SQLException {
     try (var statement = connection.createStatement()) {
       statement.execute(
@@ -178,6 +153,43 @@ public class RestApplication extends Application {
     }
   }
 
+  private static void createStatusHistory(Connection connection) throws SQLException {
+    try (var statement = connection.createStatement()) {
+      statement.execute(
+          "CREATE TABLE IF NOT EXISTS `teacup_visualization`.`status_history` ("
+              + "  `account` INT UNSIGNED NOT NULL,"
+              + "  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,"
+              + "  `status` ENUM('active', 'banned', 'inactive') NOT NULL DEFAULT 'active',"
+              + "  `time` DATETIME(3) NOT NULL DEFAULT now(3),"
+              + "  PRIMARY KEY (`id`),"
+              + "  UNIQUE INDEX `id_UNIQUE` (`id` ASC) VISIBLE,"
+              + "  INDEX `status_history.account_idx` (`account` ASC) VISIBLE,"
+              + "  CONSTRAINT `status_history.account`"
+              + "    FOREIGN KEY (`account`)"
+              + "    REFERENCES `teacup_visualization`.`account` (`id`)"
+              + "    ON DELETE NO ACTION"
+              + "    ON UPDATE NO ACTION);");
+    }
+  }
+
+  private static void createVerified(Connection connection) throws SQLException {
+    try (var statement = connection.createStatement()) {
+      statement.execute(
+          "CREATE TABLE IF NOT EXISTS `teacup_visualization`.`verified` ("
+              + "  `account` INT UNSIGNED NOT NULL,"
+              + "  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,"
+              + "  `time` TIMESTAMP(3) NOT NULL DEFAULT now(3),"
+              + "  PRIMARY KEY (`id`),"
+              + "  UNIQUE INDEX `account_UNIQUE` (`account` ASC) VISIBLE,"
+              + "  UNIQUE INDEX `id_UNIQUE` (`id` ASC) VISIBLE,"
+              + "  CONSTRAINT `verified.account`"
+              + "    FOREIGN KEY (`account`)"
+              + "    REFERENCES `teacup_visualization`.`account` (`id`)"
+              + "    ON DELETE NO ACTION"
+              + "    ON UPDATE NO ACTION);");
+    }
+  }
+
   private void initialize() {
     try (var connection = dataSource.getConnection()) {
       createSchema(connection);
@@ -187,9 +199,19 @@ public class RestApplication extends Application {
       createRole(connection);
       createAccountRole(connection);
       createStatus(connection);
-      createAccountStatus(connection);
+      createStatusHistory(connection);
+      createVerified(connection);
+
+      insertRoles(connection);
     } catch (SQLException e) {
       LOGGER.log(Level.SEVERE, "Could not initialize the database", e);
+    }
+  }
+
+  private static void insertRoles(Connection connection) throws SQLException {
+    try (var statement = connection.createStatement()) {
+      statement.execute(
+          "INSERT INTO `teacup_visualization`.`role`(name) VALUES('admin'), ('super'), ('user') ON DUPLICATE KEY UPDATE id=id");
     }
   }
 }
