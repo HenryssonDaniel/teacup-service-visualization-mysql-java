@@ -1,13 +1,12 @@
 package io.github.henryssondaniel.teacup.service.visualization.mysql;
 
-import com.mysql.cj.jdbc.MysqlDataSource;
-import io.github.henryssondaniel.teacup.core.configuration.Factory;
+import static io.github.henryssondaniel.teacup.service.visualization.mysql.Utils.createMySqlDataSource;
+
 import io.github.henryssondaniel.teacup.service.visualization.mysql.v1._0.AccountResource;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Properties;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -18,13 +17,10 @@ import javax.ws.rs.core.Application;
 @ApplicationPath("api")
 public class RestApplication extends Application {
   private static final Logger LOGGER = Logger.getLogger(RestApplication.class.getName());
-  private static final String MYSQL_PROPERTY = "visualization.mysql.";
-  private static final Properties PROPERTIES = Factory.getProperties();
-
   private final DataSource dataSource;
 
   public RestApplication() {
-    this(createMysqlDataSource());
+    this(createMySqlDataSource());
   }
 
   RestApplication(DataSource dataSource) {
@@ -33,6 +29,8 @@ public class RestApplication extends Application {
 
   @Override
   public Set<Class<?>> getClasses() {
+    LOGGER.log(Level.FINE, "Get classes");
+
     initialize();
     return new HashSet<>(Collections.singletonList(AccountResource.class));
   }
@@ -112,15 +110,6 @@ public class RestApplication extends Application {
               + "    ON DELETE NO ACTION"
               + "    ON UPDATE NO ACTION);");
     }
-  }
-
-  private static DataSource createMysqlDataSource() {
-    var mysqlDataSource = new MysqlDataSource();
-    mysqlDataSource.setPassword(PROPERTIES.getProperty(MYSQL_PROPERTY + "password"));
-    mysqlDataSource.setServerName(PROPERTIES.getProperty(MYSQL_PROPERTY + "server.name"));
-    mysqlDataSource.setUser(PROPERTIES.getProperty(MYSQL_PROPERTY + "user"));
-
-    return mysqlDataSource;
   }
 
   private static void createRole(Connection connection) throws SQLException {
