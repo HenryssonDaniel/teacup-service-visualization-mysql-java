@@ -14,11 +14,22 @@ import javax.sql.DataSource;
 import javax.ws.rs.ApplicationPath;
 import javax.ws.rs.core.Application;
 
+/**
+ * REST application. This is the starting point for the REST server. All the resources will have the
+ * /api/ in front of the path.
+ *
+ * @since 1.0
+ */
 @ApplicationPath("api")
 public class RestApplication extends Application {
   private static final Logger LOGGER = Logger.getLogger(RestApplication.class.getName());
   private final DataSource dataSource;
 
+  /**
+   * Constructor.
+   *
+   * @since 1.0
+   */
   public RestApplication() {
     this(createMySqlDataSource());
   }
@@ -32,6 +43,7 @@ public class RestApplication extends Application {
     LOGGER.log(Level.FINE, "Get classes");
 
     initialize();
+
     return new HashSet<>(Collections.singletonList(AccountResource.class));
   }
 
