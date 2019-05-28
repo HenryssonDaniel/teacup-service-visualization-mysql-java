@@ -234,18 +234,39 @@ public class AccountResource {
             "INSERT INTO `teacup_visualization`.`status_history` SET account = ?")) {
       preparedStatement.setInt(1, id);
       preparedStatement.execute();
+    } catch (SQLException e) {
+      try (var preparedStatement =
+          connection.prepareStatement(
+              "DELETE FROM `teacup_visualization`.`account_role` WHERE account = ?")) {
+        preparedStatement.setInt(1, id);
+        preparedStatement.execute();
+      }
+
+      throw e;
     }
   }
 
   private static void insertSubAccountRows(Connection connection, Statement statement)
       throws SQLException {
     try (var generatedKeys = statement.getGeneratedKeys()) {
-      if (generatedKeys.next()) {
-        var id = generatedKeys.getInt(1);
+      if (generatedKeys.next()) insertSubAccountRows(connection, generatedKeys.getInt(1));
+      else throw new SQLException("Could not retrieve the account ID");
+    }
+  }
 
-        insertAccountRole(connection, id);
-        insertStatusHistory(connection, id);
-      } else throw new SQLException("Could not retrieve the account ID");
+  private static void insertSubAccountRows(Connection connection, int id) throws SQLException {
+    try {
+      insertAccountRole(connection, id);
+      insertStatusHistory(connection, id);
+    } catch (SQLException e) {
+      try (var preparedStatement =
+          connection.prepareStatement(
+              "DELETE FROM `teacup_visualization`.`account` WHERE id = ?")) {
+        preparedStatement.setInt(1, id);
+        preparedStatement.execute();
+      }
+
+      throw e;
     }
   }
 
