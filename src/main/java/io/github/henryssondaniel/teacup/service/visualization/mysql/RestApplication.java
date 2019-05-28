@@ -79,7 +79,7 @@ public class RestApplication extends Application {
       statement.execute(
           "CREATE TABLE IF NOT EXISTS `teacup_visualization`.`log_in` ("
               + "  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,"
-              + "  `ip` VARCHAR(15) NOT NULL,"
+              + "  `ip` VARCHAR(39) NOT NULL,"
               + "  `log_ins` INT UNSIGNED NOT NULL,"
               + "  `successful` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,"
               + "  `time` DATETIME(3) NOT NULL DEFAULT now(3),"
@@ -100,7 +100,7 @@ public class RestApplication extends Application {
           "CREATE TABLE IF NOT EXISTS `teacup_visualization`.`log_ins` ("
               + "  `account` INT UNSIGNED NOT NULL,"
               + "  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,"
-              + "  `unsuccesful` INT UNSIGNED NOT NULL DEFAULT 0,"
+              + "  `unsuccessful` INT UNSIGNED NOT NULL DEFAULT 0,"
               + "  PRIMARY KEY (`id`),"
               + "  UNIQUE INDEX `id_UNIQUE` (`id` ASC) VISIBLE,"
               + "  UNIQUE INDEX `account_UNIQUE` (`account` ASC) VISIBLE,"
