@@ -9,13 +9,11 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.management.Notification;
 import javax.servlet.http.HttpServletRequest;
 import javax.sql.DataSource;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -48,7 +46,7 @@ public class AccountResource {
     try (var connection = dataSource.getConnection()) {
       responseBuilder = logIn(connection, data, httpServletRequest);
     } catch (SQLException e) {
-      LOGGER.log(Level.SEVERE, "Could not initialize the database", e);
+      LOGGER.log(Level.SEVERE, "An error occurred during log in", e);
       responseBuilder = Response.serverError();
     }
 
@@ -66,7 +64,7 @@ public class AccountResource {
     try (var connection = dataSource.getConnection()) {
       responseBuilder = recover(connection, data, httpServletRequest);
     } catch (SQLException e) {
-      LOGGER.log(Level.SEVERE, "Could not initialize the database", e);
+      LOGGER.log(Level.SEVERE, "An error occurred during recover", e);
       responseBuilder = Response.serverError();
     }
 
@@ -76,10 +74,19 @@ public class AccountResource {
   @Consumes(MediaType.APPLICATION_JSON)
   @POST
   @Path("signUp")
-  @Produces(MediaType.APPLICATION_JSON)
-  public static Response signUp(Notification notification) {
+  public Response signUp(String data) {
     LOGGER.log(Level.FINE, "Sign up");
-    return Response.status(201).entity(notification).build();
+
+    ResponseBuilder responseBuilder;
+
+    try (var connection = dataSource.getConnection()) {
+      responseBuilder = signUp(connection, data);
+    } catch (SQLException e) {
+      LOGGER.log(Level.SEVERE, "An error occurred during sign up", e);
+      responseBuilder = Response.serverError();
+    }
+
+    return responseBuilder.build();
   }
 
   private static String getIp(HttpServletRequest httpServletRequest) {
@@ -101,31 +108,45 @@ public class AccountResource {
     }
   }
 
-  private static ResponseBuilder getResultSet(
-      Connection connection, HttpServletRequest httpServletRequest, int id, boolean match)
-      throws SQLException {
+  private static ResponseBuilder insertAccount(
+      Connection connection, JSONObject jsonObject, String email) throws SQLException {
     try (var preparedStatement =
         connection.prepareStatement(
-            "SELECT * FROM `teacup_visualization`.`log_ins` WHERE account = ?")) {
-      preparedStatement.setInt(1, id);
+            "INSERT INTO `teacup_visualization`.`account`(email, first_name, last_name, password) VALUES(?, ?, ?, ?)",
+            Statement.RETURN_GENERATED_KEYS)) {
+      preparedStatement.setString(1, email);
+      preparedStatement.setString(2, jsonObject.getString("firstName"));
+      preparedStatement.setString(3, jsonObject.getString("lastName"));
+      preparedStatement.setString(4, jsonObject.getString("password"));
 
-      insertLogIns(connection, httpServletRequest, id, match, preparedStatement);
+      preparedStatement.execute();
+
+      insertSubAccountRows(connection, preparedStatement);
     }
 
-    return match ? Response.ok() : Response.status(Status.UNAUTHORIZED);
+    return Response.ok();
+  }
+
+  private static void insertAccountRole(Connection connection, int id) throws SQLException {
+    try (var preparedStatement =
+        connection.prepareStatement(
+            "INSERT INTO `teacup_visualization`.`account_role` SET account = ?")) {
+      preparedStatement.setInt(1, id);
+      preparedStatement.execute();
+    }
   }
 
   private static void insertLogIn(
       Connection connection, HttpServletRequest httpServletRequest, int logInsId, int successful)
       throws SQLException {
-    try (var aaaa =
+    try (var preparedStatement =
         connection.prepareStatement(
             "INSERT INTO `teacup_visualization`.`log_in`(ip, log_ins, successful) VALUES(?, ?, ?)")) {
-      aaaa.setString(1, getIp(httpServletRequest));
-      aaaa.setInt(2, logInsId);
-      aaaa.setInt(3, successful);
+      preparedStatement.setString(1, getIp(httpServletRequest));
+      preparedStatement.setInt(2, logInsId);
+      preparedStatement.setInt(3, successful);
 
-      aaaa.execute();
+      preparedStatement.execute();
     }
   }
 
@@ -144,13 +165,15 @@ public class AccountResource {
     }
   }
 
-  private static void insertLogIns(
+  private static ResponseBuilder insertLogIns(
       Connection connection,
       HttpServletRequest httpServletRequest,
       int id,
       boolean match,
       PreparedStatement preparedStatement)
       throws SQLException {
+    preparedStatement.setInt(1, id);
+
     try (var resultSet = preparedStatement.executeQuery()) {
       int logInsId;
       var unsuccessful = 0;
@@ -162,7 +185,15 @@ public class AccountResource {
         updateLogIns(connection, id, unsuccessful);
       } else logInsId = insertLogIns(connection, id, match);
 
-      if (unsuccessful <= 5) insertLogIn(connection, httpServletRequest, logInsId, match ? 1 : 0);
+      ResponseBuilder responseBuilder;
+
+      if (unsuccessful <= 5) {
+        insertLogIn(connection, httpServletRequest, logInsId, match ? 1 : 0);
+
+        responseBuilder = match ? Response.ok() : Response.status(Status.UNAUTHORIZED);
+      } else responseBuilder = Response.status(Status.NOT_ACCEPTABLE);
+
+      return responseBuilder;
     }
   }
 
@@ -172,6 +203,7 @@ public class AccountResource {
       PreparedStatement preparedStatement)
       throws SQLException {
     ResponseBuilder responseBuilder;
+
     try (var resultSet = preparedStatement.executeQuery()) {
       if (resultSet.next()) {
         insertRecover(connection, httpServletRequest, resultSet);
@@ -179,6 +211,7 @@ public class AccountResource {
         responseBuilder = Response.ok();
       } else responseBuilder = Response.status(Status.NO_CONTENT);
     }
+
     return responseBuilder;
   }
 
@@ -195,27 +228,53 @@ public class AccountResource {
     }
   }
 
+  private static void insertStatusHistory(Connection connection, int id) throws SQLException {
+    try (var preparedStatement =
+        connection.prepareStatement(
+            "INSERT INTO `teacup_visualization`.`status_history` SET account = ?")) {
+      preparedStatement.setInt(1, id);
+      preparedStatement.execute();
+    }
+  }
+
+  private static void insertSubAccountRows(Connection connection, Statement statement)
+      throws SQLException {
+    try (var generatedKeys = statement.getGeneratedKeys()) {
+      if (generatedKeys.next()) {
+        var id = generatedKeys.getInt(1);
+
+        insertAccountRole(connection, id);
+        insertStatusHistory(connection, id);
+      } else throw new SQLException("Could not retrieve the account ID");
+    }
+  }
+
   private static boolean isNotIp(String ip) {
     return ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip);
   }
 
   private static ResponseBuilder logIn(
+      Connection connection, HttpServletRequest httpServletRequest, int id, boolean match)
+      throws SQLException {
+    try (var preparedStatement =
+        connection.prepareStatement(
+            "SELECT * FROM `teacup_visualization`.`log_ins` WHERE account = ?")) {
+      return insertLogIns(connection, httpServletRequest, id, match, preparedStatement);
+    }
+  }
+
+  private static ResponseBuilder logIn(
       Connection connection, String data, HttpServletRequest httpServletRequest)
       throws SQLException {
-    ResponseBuilder responseBuilder;
-
     try (var preparedStatement =
         connection.prepareStatement(
             "SELECT * FROM `teacup_visualization`.`account` WHERE email = ?")) {
       var jsonObject = new JSONObject(data);
       preparedStatement.setString(1, jsonObject.getString("email"));
 
-      responseBuilder =
-          logIn(
-              connection, httpServletRequest, jsonObject.getString("password"), preparedStatement);
+      return logIn(
+          connection, httpServletRequest, jsonObject.getString("password"), preparedStatement);
     }
-
-    return responseBuilder;
   }
 
   private static ResponseBuilder logIn(
@@ -224,37 +283,49 @@ public class AccountResource {
       String password,
       PreparedStatement preparedStatement)
       throws SQLException {
-    ResponseBuilder responseBuilder;
-
     try (var resultSet = preparedStatement.executeQuery()) {
-      responseBuilder =
-          resultSet.next()
-              ? getResultSet(
-                  connection,
-                  httpServletRequest,
-                  resultSet.getInt("id"),
-                  password.equals(resultSet.getString("password")))
-              : Response.status(Status.UNAUTHORIZED);
+      return resultSet.next()
+          ? logIn(
+              connection,
+              httpServletRequest,
+              resultSet.getInt("id"),
+              password.equals(resultSet.getString("password")))
+          : Response.status(Status.UNAUTHORIZED);
     }
-
-    return responseBuilder;
   }
 
   private static ResponseBuilder recover(
       Connection connection, String data, HttpServletRequest httpServletRequest)
       throws SQLException {
-    ResponseBuilder responseBuilder;
-
     try (var preparedStatement =
         connection.prepareStatement(
             "SELECT * FROM `teacup_visualization`.`account` WHERE email = ?")) {
       var jsonObject = new JSONObject(data);
       preparedStatement.setString(1, jsonObject.getString("email"));
 
-      responseBuilder = insertRecover(connection, httpServletRequest, preparedStatement);
+      return insertRecover(connection, httpServletRequest, preparedStatement);
     }
+  }
 
-    return responseBuilder;
+  private static ResponseBuilder signUp(
+      Connection connection, JSONObject jsonObject, PreparedStatement preparedStatement)
+      throws SQLException {
+    var email = jsonObject.getString("email");
+    preparedStatement.setString(1, email);
+
+    try (var resultSet = preparedStatement.executeQuery()) {
+      return resultSet.next()
+          ? Response.status(Status.CONFLICT)
+          : insertAccount(connection, jsonObject, email);
+    }
+  }
+
+  private static ResponseBuilder signUp(Connection connection, String data) throws SQLException {
+    try (var preparedStatement =
+        connection.prepareStatement(
+            "SELECT * FROM `teacup_visualization`.`account` WHERE email = ?")) {
+      return signUp(connection, new JSONObject(data), preparedStatement);
+    }
   }
 
   private static void updateLogIns(Connection connection, int id, int unsuccessful)

@@ -56,7 +56,7 @@ public class RestApplication extends Application {
           "CREATE TABLE IF NOT EXISTS `teacup_visualization`.`account_role` ("
               + "  `account` INT UNSIGNED NOT NULL,"
               + "  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,"
-              + "  `role` INT UNSIGNED NOT NULL,"
+              + "  `role` INT UNSIGNED NOT NULL DEFAULT 3,"
               + "  PRIMARY KEY (`id`),"
               + "  UNIQUE INDEX `id_UNIQUE` (`id` ASC) VISIBLE,"
               + "  INDEX `account_role.account_idx` (`account` ASC) VISIBLE,"
@@ -205,13 +205,14 @@ public class RestApplication extends Application {
       createLogIns(connection);
       createLogIn(connection);
       createRole(connection);
+
+      insertRoles(connection);
+
       createAccountRole(connection);
       createStatus(connection);
       createStatusHistory(connection);
       createVerified(connection);
       createRecover(connection);
-
-      insertRoles(connection);
     } catch (SQLException e) {
       LOGGER.log(Level.SEVERE, "Could not initialize the database", e);
     }
