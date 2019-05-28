@@ -7,6 +7,11 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.sql.DataSource;
 
+/**
+ * Utils class for MySQL.
+ *
+ * @since 1.0
+ */
 public enum Utils {
   ;
 
@@ -14,6 +19,12 @@ public enum Utils {
   private static final String MYSQL_PROPERTY = "visualization.mysql.";
   private static final Properties PROPERTIES = Factory.getProperties();
 
+  /**
+   * Creates new MySQL data source.
+   *
+   * @return the data source
+   * @since 1.0
+   */
   public static DataSource createMySqlDataSource() {
     LOGGER.log(Level.FINER, "Create MySQL data source");
 
