@@ -112,6 +112,25 @@ public class RestApplication extends Application {
     }
   }
 
+  private static void createRecover(Connection connection) throws SQLException {
+    try (var statement = connection.createStatement()) {
+      statement.execute(
+          "CREATE TABLE IF NOT EXISTS `teacup_visualization`.`recover` ("
+              + "  `account` INT UNSIGNED NOT NULL,"
+              + "  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,"
+              + "  `ip` VARCHAR(39) NOT NULL,"
+              + "  `time` TIMESTAMP(3) NOT NULL DEFAULT now(3),"
+              + "  PRIMARY KEY (`id`),"
+              + "  UNIQUE INDEX `id_UNIQUE` (`id` ASC) VISIBLE,"
+              + "  INDEX `recover.account_idx` (`account` ASC) VISIBLE,"
+              + "  CONSTRAINT `recover.account`"
+              + "    FOREIGN KEY (`account`)"
+              + "    REFERENCES `teacup_visualization`.`account` (`id`)"
+              + "    ON DELETE NO ACTION"
+              + "    ON UPDATE NO ACTION);");
+    }
+  }
+
   private static void createRole(Connection connection) throws SQLException {
     try (var statement = connection.createStatement()) {
       statement.execute(
@@ -190,6 +209,7 @@ public class RestApplication extends Application {
       createStatus(connection);
       createStatusHistory(connection);
       createVerified(connection);
+      createRecover(connection);
 
       insertRoles(connection);
     } catch (SQLException e) {

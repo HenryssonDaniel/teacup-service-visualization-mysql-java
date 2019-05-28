@@ -4,6 +4,7 @@ import static io.github.henryssondaniel.teacup.service.visualization.mysql.Utils
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.logging.Level;
@@ -45,7 +46,25 @@ public class AccountResource {
     ResponseBuilder responseBuilder;
 
     try (var connection = dataSource.getConnection()) {
-      responseBuilder = getResponseBuilder(connection, data, httpServletRequest);
+      responseBuilder = logIn(connection, data, httpServletRequest);
+    } catch (SQLException e) {
+      LOGGER.log(Level.SEVERE, "Could not initialize the database", e);
+      responseBuilder = Response.serverError();
+    }
+
+    return responseBuilder.build();
+  }
+
+  @Consumes(MediaType.APPLICATION_JSON)
+  @POST
+  @Path("recover")
+  public Response recover(String data, @Context HttpServletRequest httpServletRequest) {
+    LOGGER.log(Level.FINE, "Recover");
+
+    ResponseBuilder responseBuilder;
+
+    try (var connection = dataSource.getConnection()) {
+      responseBuilder = recover(connection, data, httpServletRequest);
     } catch (SQLException e) {
       LOGGER.log(Level.SEVERE, "Could not initialize the database", e);
       responseBuilder = Response.serverError();
@@ -80,47 +99,6 @@ public class AccountResource {
       if (resultSet.next()) return resultSet.getInt(1);
       throw new SQLException("Could not retrieve the log ins ID");
     }
-  }
-
-  private static ResponseBuilder getResponseBuilder(
-      Connection connection, String data, HttpServletRequest httpServletRequest)
-      throws SQLException {
-    ResponseBuilder responseBuilder;
-
-    try (var preparedStatement =
-        connection.prepareStatement(
-            "SELECT * FROM `teacup_visualization`.`account` WHERE email = ?")) {
-      var jsonObject = new JSONObject(data);
-      preparedStatement.setString(1, jsonObject.getString("email"));
-
-      responseBuilder =
-          getResponseBuilder(
-              connection, httpServletRequest, jsonObject.getString("password"), preparedStatement);
-    }
-
-    return responseBuilder;
-  }
-
-  private static ResponseBuilder getResponseBuilder(
-      Connection connection,
-      HttpServletRequest httpServletRequest,
-      String password,
-      PreparedStatement preparedStatement)
-      throws SQLException {
-    ResponseBuilder responseBuilder;
-
-    try (var resultSet = preparedStatement.executeQuery()) {
-      responseBuilder =
-          resultSet.next()
-              ? getResultSet(
-                  connection,
-                  httpServletRequest,
-                  resultSet.getInt("id"),
-                  password.equals(resultSet.getString("password")))
-              : Response.status(Status.UNAUTHORIZED);
-    }
-
-    return responseBuilder;
   }
 
   private static ResponseBuilder getResultSet(
@@ -188,8 +166,95 @@ public class AccountResource {
     }
   }
 
+  private static ResponseBuilder insertRecover(
+      Connection connection,
+      HttpServletRequest httpServletRequest,
+      PreparedStatement preparedStatement)
+      throws SQLException {
+    ResponseBuilder responseBuilder;
+    try (var resultSet = preparedStatement.executeQuery()) {
+      if (resultSet.next()) {
+        insertRecover(connection, httpServletRequest, resultSet);
+
+        responseBuilder = Response.ok();
+      } else responseBuilder = Response.status(Status.NO_CONTENT);
+    }
+    return responseBuilder;
+  }
+
+  private static void insertRecover(
+      Connection connection, HttpServletRequest httpServletRequest, ResultSet resultSet)
+      throws SQLException {
+    try (var preparedStatement =
+        connection.prepareStatement(
+            "INSERT INTO `teacup_visualization`.`recover`(account, ip) VALUES(?, ?)")) {
+      preparedStatement.setInt(1, resultSet.getInt("id"));
+      preparedStatement.setString(2, getIp(httpServletRequest));
+
+      preparedStatement.execute();
+    }
+  }
+
   private static boolean isNotIp(String ip) {
     return ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip);
+  }
+
+  private static ResponseBuilder logIn(
+      Connection connection, String data, HttpServletRequest httpServletRequest)
+      throws SQLException {
+    ResponseBuilder responseBuilder;
+
+    try (var preparedStatement =
+        connection.prepareStatement(
+            "SELECT * FROM `teacup_visualization`.`account` WHERE email = ?")) {
+      var jsonObject = new JSONObject(data);
+      preparedStatement.setString(1, jsonObject.getString("email"));
+
+      responseBuilder =
+          logIn(
+              connection, httpServletRequest, jsonObject.getString("password"), preparedStatement);
+    }
+
+    return responseBuilder;
+  }
+
+  private static ResponseBuilder logIn(
+      Connection connection,
+      HttpServletRequest httpServletRequest,
+      String password,
+      PreparedStatement preparedStatement)
+      throws SQLException {
+    ResponseBuilder responseBuilder;
+
+    try (var resultSet = preparedStatement.executeQuery()) {
+      responseBuilder =
+          resultSet.next()
+              ? getResultSet(
+                  connection,
+                  httpServletRequest,
+                  resultSet.getInt("id"),
+                  password.equals(resultSet.getString("password")))
+              : Response.status(Status.UNAUTHORIZED);
+    }
+
+    return responseBuilder;
+  }
+
+  private static ResponseBuilder recover(
+      Connection connection, String data, HttpServletRequest httpServletRequest)
+      throws SQLException {
+    ResponseBuilder responseBuilder;
+
+    try (var preparedStatement =
+        connection.prepareStatement(
+            "SELECT * FROM `teacup_visualization`.`account` WHERE email = ?")) {
+      var jsonObject = new JSONObject(data);
+      preparedStatement.setString(1, jsonObject.getString("email"));
+
+      responseBuilder = insertRecover(connection, httpServletRequest, preparedStatement);
+    }
+
+    return responseBuilder;
   }
 
   private static void updateLogIns(Connection connection, int id, int unsuccessful)
