@@ -21,12 +21,21 @@ import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
 import org.json.JSONObject;
 
+/**
+ * Account resource. Handles account related requests.
+ *
+ * @since 1.0
+ */
 @Path("{a:v1/account|v1.0/account|account}")
 public class AccountResource {
   private static final Logger LOGGER = Logger.getLogger(AccountResource.class.getName());
-
   private final DataSource dataSource;
 
+  /**
+   * Constructor.
+   *
+   * @since 1.0
+   */
   public AccountResource() {
     this(createMySqlDataSource());
   }
@@ -180,9 +189,11 @@ public class AccountResource {
 
       if (resultSet.next()) {
         logInsId = resultSet.getInt("id");
-        unsuccessful = match ? 0 : resultSet.getInt("unsuccessful") + 1;
 
-        updateLogIns(connection, id, unsuccessful);
+        unsuccessful = resultSet.getInt("unsuccessful");
+        unsuccessful = match && unsuccessful <= 5 ? 0 : unsuccessful + 1;
+
+        if (unsuccessful <= 5) updateLogIns(connection, id, unsuccessful);
       } else logInsId = insertLogIns(connection, id, match);
 
       ResponseBuilder responseBuilder;
