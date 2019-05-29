@@ -28,6 +28,7 @@ class AccountResourceTest {
       "{\"email\":\"admin@teacup.com\", \"password\":\"password\"}";
   private static final String PASSWORD = "password";
   private static final String PASS_WORD = "PassWord";
+  private static final String RECOVER = "{\"email\":\"admin@teacup.com\"}";
   private static final String UNSUCCESSFUL = "unsuccessful";
 
   private final DataSource dataSource = mock(DataSource.class);
@@ -128,9 +129,7 @@ class AccountResourceTest {
 
   @Test
   void logInWhenConnectionError() throws SQLException {
-    try (var conn = dataSource.getConnection()) {
-      when(conn).thenThrow(new SQLException("test"));
-    }
+    connectionError();
 
     assertThat(callLogIn().getStatus()).isEqualTo(Status.INTERNAL_SERVER_ERROR.getStatusCode());
 
@@ -181,8 +180,64 @@ class AccountResourceTest {
     verifyNoMoreInteractions(resultSet);
   }
 
+  @Test
+  void recover() throws SQLException {
+    assertThat(callRecover().getStatus()).isEqualTo(Status.OK.getStatusCode());
+
+    verify(dataSource).getConnection();
+    verifyNoMoreInteractions(dataSource);
+
+    verify(httpServletRequest, times(5)).getHeader(anyString());
+    verify(httpServletRequest).getRemoteAddr();
+    verifyNoMoreInteractions(httpServletRequest);
+
+    verify(resultSet).close();
+    verify(resultSet).getInt(ID);
+    verify(resultSet).next();
+    verifyNoMoreInteractions(resultSet);
+  }
+
+  @Test
+  void recoverWhenConnectionError() throws SQLException {
+    connectionError();
+
+    assertThat(callRecover().getStatus()).isEqualTo(Status.INTERNAL_SERVER_ERROR.getStatusCode());
+
+    verify(dataSource).getConnection();
+    verifyNoMoreInteractions(dataSource);
+
+    verifyZeroInteractions(httpServletRequest);
+    verifyZeroInteractions(resultSet);
+  }
+
+  @Test
+  void recoverWhenNoAccount() throws SQLException {
+    when(resultSet.next()).thenReturn(false);
+
+    assertThat(callRecover().getStatus()).isEqualTo(Status.NO_CONTENT.getStatusCode());
+
+    verify(dataSource).getConnection();
+    verifyNoMoreInteractions(dataSource);
+
+    verifyZeroInteractions(httpServletRequest);
+
+    verify(resultSet).close();
+    verify(resultSet).next();
+    verifyNoMoreInteractions(resultSet);
+  }
+
   private Response callLogIn() {
     return new AccountResource(dataSource).logIn(LOG_IN, httpServletRequest);
+  }
+
+  private Response callRecover() {
+    return new AccountResource(dataSource).recover(RECOVER, httpServletRequest);
+  }
+
+  private void connectionError() throws SQLException {
+    try (var conn = dataSource.getConnection()) {
+      when(conn).thenThrow(new SQLException("test"));
+    }
   }
 
   private static Connection setupConnection(PreparedStatement preparedStatement)
