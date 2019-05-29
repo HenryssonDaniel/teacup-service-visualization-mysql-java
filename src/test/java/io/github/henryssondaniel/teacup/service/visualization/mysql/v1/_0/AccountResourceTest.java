@@ -65,6 +65,7 @@ class AccountResourceTest {
 
     verify(resultSet, times(2)).close();
     verify(resultSet, times(2)).getInt(ID);
+    verify(resultSet).getInt(UNSUCCESSFUL);
     verify(resultSet).getString(PASSWORD);
     verify(resultSet, times(2)).next();
     verifyNoMoreInteractions(resultSet);
