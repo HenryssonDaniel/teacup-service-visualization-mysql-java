@@ -22,7 +22,17 @@ import javax.ws.rs.core.Application;
  */
 @ApplicationPath("api")
 public class RestApplication extends Application {
+  private static final String ACCOUNT = "`account` INT UNSIGNED NOT NULL,";
+  private static final String CREATE_TABLE = "CREATE TABLE IF NOT EXISTS `teacup_visualization`";
+  private static final String FOREIGN_KEY_ACCOUNT =
+      " FOREIGN KEY (`account`) REFERENCES `teacup_visualization`.`account` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION";
+  private static final String ID = "`id` INT UNSIGNED NOT NULL AUTO_INCREMENT,";
   private static final Logger LOGGER = Logger.getLogger(RestApplication.class.getName());
+  private static final String NO_ACTION = " ON DELETE NO ACTION ON UPDATE NO ACTION);";
+  private static final String PRIMARY_KEY = " PRIMARY KEY (`id`),";
+  private static final String TIME = "`time` TIMESTAMP(3) NOT NULL DEFAULT now(3),";
+  private static final String UNIQUE_INDEX = " UNIQUE INDEX `id_UNIQUE` (`id` ASC) VISIBLE,";
+
   private final DataSource dataSource;
 
   /**
@@ -50,14 +60,15 @@ public class RestApplication extends Application {
   private static void createAccount(Connection connection) throws SQLException {
     try (var statement = connection.createStatement()) {
       statement.execute(
-          "CREATE TABLE IF NOT EXISTS `teacup_visualization`.`account` ("
+          CREATE_TABLE
+              + ".`account` ("
               + "  `email` VARCHAR(45) NOT NULL,"
               + "  `first_name` VARCHAR(45) NOT NULL,"
-              + "  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,"
+              + ID
               + "  `last_name` VARCHAR(45) NOT NULL,"
               + "  `password` VARCHAR(45) NOT NULL,"
-              + "  PRIMARY KEY (`id`),"
-              + "  UNIQUE INDEX `id_UNIQUE` (`id` ASC) VISIBLE,"
+              + PRIMARY_KEY
+              + UNIQUE_INDEX
               + "  UNIQUE INDEX `email_UNIQUE` (`email` ASC) VISIBLE);");
     }
   }
@@ -65,91 +76,88 @@ public class RestApplication extends Application {
   private static void createAccountRole(Connection connection) throws SQLException {
     try (var statement = connection.createStatement()) {
       statement.execute(
-          "CREATE TABLE IF NOT EXISTS `teacup_visualization`.`account_role` ("
-              + "  `account` INT UNSIGNED NOT NULL,"
-              + "  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,"
+          CREATE_TABLE
+              + ".`account_role` ("
+              + ACCOUNT
+              + ID
               + "  `role` INT UNSIGNED NOT NULL DEFAULT 3,"
-              + "  PRIMARY KEY (`id`),"
-              + "  UNIQUE INDEX `id_UNIQUE` (`id` ASC) VISIBLE,"
+              + PRIMARY_KEY
+              + UNIQUE_INDEX
               + "  INDEX `account_role.account_idx` (`account` ASC) VISIBLE,"
               + "  INDEX `account_role.role_idx` (`role` ASC) VISIBLE,"
               + "  CONSTRAINT `account_role.account`"
-              + "    FOREIGN KEY (`account`)"
-              + "    REFERENCES `teacup_visualization`.`account` (`id`)"
-              + "    ON DELETE NO ACTION"
-              + "    ON UPDATE NO ACTION,"
+              + FOREIGN_KEY_ACCOUNT
+              + ','
               + "  CONSTRAINT `account_role.role`"
               + "    FOREIGN KEY (`role`)"
               + "    REFERENCES `teacup_visualization`.`role` (`id`)"
-              + "    ON DELETE NO ACTION"
-              + "    ON UPDATE NO ACTION);");
+              + NO_ACTION);
     }
   }
 
   private static void createLogIn(Connection connection) throws SQLException {
     try (var statement = connection.createStatement()) {
       statement.execute(
-          "CREATE TABLE IF NOT EXISTS `teacup_visualization`.`log_in` ("
-              + "  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,"
+          CREATE_TABLE
+              + ".`log_in` ("
+              + ID
               + "  `ip` VARCHAR(39) NOT NULL,"
               + "  `log_ins` INT UNSIGNED NOT NULL,"
               + "  `successful` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,"
-              + "  `time` DATETIME(3) NOT NULL DEFAULT now(3),"
-              + "  PRIMARY KEY (`id`),"
-              + "  UNIQUE INDEX `id_UNIQUE` (`id` ASC) VISIBLE,"
+              + TIME
+              + PRIMARY_KEY
+              + UNIQUE_INDEX
               + "  INDEX `log_in.log_ins_idx` (`log_ins` ASC) VISIBLE,"
               + "  CONSTRAINT `log_in.log_ins`"
               + "    FOREIGN KEY (`log_ins`)"
               + "    REFERENCES `teacup_visualization`.`log_ins` (`id`)"
-              + "    ON DELETE NO ACTION"
-              + "    ON UPDATE NO ACTION);");
+              + NO_ACTION);
     }
   }
 
   private static void createLogIns(Connection connection) throws SQLException {
     try (var statement = connection.createStatement()) {
       statement.execute(
-          "CREATE TABLE IF NOT EXISTS `teacup_visualization`.`log_ins` ("
-              + "  `account` INT UNSIGNED NOT NULL,"
-              + "  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,"
+          CREATE_TABLE
+              + ".`log_ins` ("
+              + ACCOUNT
+              + ID
               + "  `unsuccessful` INT UNSIGNED NOT NULL DEFAULT 0,"
-              + "  PRIMARY KEY (`id`),"
-              + "  UNIQUE INDEX `id_UNIQUE` (`id` ASC) VISIBLE,"
+              + PRIMARY_KEY
+              + UNIQUE_INDEX
               + "  UNIQUE INDEX `account_UNIQUE` (`account` ASC) VISIBLE,"
               + "  CONSTRAINT `log_ins.account`"
-              + "    FOREIGN KEY (`account`)"
-              + "    REFERENCES `teacup_visualization`.`account` (`id`)"
-              + "    ON DELETE NO ACTION"
-              + "    ON UPDATE NO ACTION);");
+              + FOREIGN_KEY_ACCOUNT
+              + ");");
     }
   }
 
   private static void createRecover(Connection connection) throws SQLException {
     try (var statement = connection.createStatement()) {
       statement.execute(
-          "CREATE TABLE IF NOT EXISTS `teacup_visualization`.`recover` ("
-              + "  `account` INT UNSIGNED NOT NULL,"
-              + "  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,"
+          CREATE_TABLE
+              + ".`recover` ("
+              + ACCOUNT
+              + ID
               + "  `ip` VARCHAR(39) NOT NULL,"
-              + "  `time` TIMESTAMP(3) NOT NULL DEFAULT now(3),"
-              + "  PRIMARY KEY (`id`),"
-              + "  UNIQUE INDEX `id_UNIQUE` (`id` ASC) VISIBLE,"
+              + TIME
+              + PRIMARY_KEY
+              + UNIQUE_INDEX
               + "  INDEX `recover.account_idx` (`account` ASC) VISIBLE,"
               + "  CONSTRAINT `recover.account`"
-              + "    FOREIGN KEY (`account`)"
-              + "    REFERENCES `teacup_visualization`.`account` (`id`)"
-              + "    ON DELETE NO ACTION"
-              + "    ON UPDATE NO ACTION);");
+              + FOREIGN_KEY_ACCOUNT
+              + ");");
     }
   }
 
   private static void createRole(Connection connection) throws SQLException {
     try (var statement = connection.createStatement()) {
       statement.execute(
-          "CREATE TABLE IF NOT EXISTS `teacup_visualization`.`role` ("
-              + "  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,"
+          CREATE_TABLE
+              + ".`role` ("
+              + ID
               + "  `name` VARCHAR(45) NOT NULL,"
-              + "  PRIMARY KEY (`id`),"
+              + PRIMARY_KEY
               + "  UNIQUE INDEX `name_UNIQUE` (`name` ASC) VISIBLE,"
               + "  UNIQUE INDEX `id_UNIQUE` (`id` ASC) VISIBLE);");
     }
@@ -164,11 +172,12 @@ public class RestApplication extends Application {
   private static void createStatus(Connection connection) throws SQLException {
     try (var statement = connection.createStatement()) {
       statement.execute(
-          "CREATE TABLE IF NOT EXISTS `teacup_visualization`.`status` ("
-              + "  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,"
+          CREATE_TABLE
+              + ".`status` ("
+              + ID
               + "  `name` VARCHAR(45) NOT NULL,"
-              + "  PRIMARY KEY (`id`),"
-              + "  UNIQUE INDEX `id_UNIQUE` (`id` ASC) VISIBLE,"
+              + PRIMARY_KEY
+              + UNIQUE_INDEX
               + "  UNIQUE INDEX `name_UNIQUE` (`name` ASC) VISIBLE);");
     }
   }
@@ -176,37 +185,35 @@ public class RestApplication extends Application {
   private static void createStatusHistory(Connection connection) throws SQLException {
     try (var statement = connection.createStatement()) {
       statement.execute(
-          "CREATE TABLE IF NOT EXISTS `teacup_visualization`.`status_history` ("
-              + "  `account` INT UNSIGNED NOT NULL,"
-              + "  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,"
+          CREATE_TABLE
+              + ".`status_history` ("
+              + ACCOUNT
+              + ID
               + "  `status` ENUM('active', 'banned', 'inactive') NOT NULL DEFAULT 'active',"
-              + "  `time` DATETIME(3) NOT NULL DEFAULT now(3),"
-              + "  PRIMARY KEY (`id`),"
-              + "  UNIQUE INDEX `id_UNIQUE` (`id` ASC) VISIBLE,"
+              + TIME
+              + PRIMARY_KEY
+              + UNIQUE_INDEX
               + "  INDEX `status_history.account_idx` (`account` ASC) VISIBLE,"
               + "  CONSTRAINT `status_history.account`"
-              + "    FOREIGN KEY (`account`)"
-              + "    REFERENCES `teacup_visualization`.`account` (`id`)"
-              + "    ON DELETE NO ACTION"
-              + "    ON UPDATE NO ACTION);");
+              + FOREIGN_KEY_ACCOUNT
+              + ");");
     }
   }
 
   private static void createVerified(Connection connection) throws SQLException {
     try (var statement = connection.createStatement()) {
       statement.execute(
-          "CREATE TABLE IF NOT EXISTS `teacup_visualization`.`verified` ("
-              + "  `account` INT UNSIGNED NOT NULL,"
-              + "  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,"
-              + "  `time` TIMESTAMP(3) NOT NULL DEFAULT now(3),"
-              + "  PRIMARY KEY (`id`),"
+          CREATE_TABLE
+              + ".`verified` ("
+              + ACCOUNT
+              + ID
+              + TIME
+              + PRIMARY_KEY
               + "  UNIQUE INDEX `account_UNIQUE` (`account` ASC) VISIBLE,"
-              + "  UNIQUE INDEX `id_UNIQUE` (`id` ASC) VISIBLE,"
+              + UNIQUE_INDEX
               + "  CONSTRAINT `verified.account`"
-              + "    FOREIGN KEY (`account`)"
-              + "    REFERENCES `teacup_visualization`.`account` (`id`)"
-              + "    ON DELETE NO ACTION"
-              + "    ON UPDATE NO ACTION);");
+              + FOREIGN_KEY_ACCOUNT
+              + ");");
     }
   }
 
