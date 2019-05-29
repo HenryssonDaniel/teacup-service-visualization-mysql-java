@@ -191,7 +191,7 @@ public class AccountResource {
         logInsId = resultSet.getInt("id");
 
         unsuccessful = resultSet.getInt("unsuccessful");
-        unsuccessful = match && unsuccessful <= 5 ? 0 : unsuccessful + 1;
+        unsuccessful = match && unsuccessful < 5 ? 0 : unsuccessful + 1;
 
         if (unsuccessful <= 5) updateLogIns(connection, id, unsuccessful);
       } else logInsId = insertLogIns(connection, id, match);

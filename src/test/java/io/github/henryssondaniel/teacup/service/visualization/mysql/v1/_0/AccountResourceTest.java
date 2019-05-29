@@ -92,6 +92,25 @@ class AccountResourceTest {
   }
 
   @Test
+  void logInTooManyUnsuccessful() throws SQLException {
+    when(resultSet.getInt(UNSUCCESSFUL)).thenReturn(5);
+
+    assertThat(callLogIn().getStatus()).isEqualTo(Status.NOT_ACCEPTABLE.getStatusCode());
+
+    verify(dataSource).getConnection();
+    verifyNoMoreInteractions(dataSource);
+
+    verifyZeroInteractions(httpServletRequest);
+
+    verify(resultSet, times(2)).close();
+    verify(resultSet, times(2)).getInt(ID);
+    verify(resultSet).getInt(UNSUCCESSFUL);
+    verify(resultSet).getString(PASSWORD);
+    verify(resultSet, times(2)).next();
+    verifyNoMoreInteractions(resultSet);
+  }
+
+  @Test
   void logInWhenAccountDoesNotExist() throws SQLException {
     when(resultSet.next()).thenReturn(false);
 
