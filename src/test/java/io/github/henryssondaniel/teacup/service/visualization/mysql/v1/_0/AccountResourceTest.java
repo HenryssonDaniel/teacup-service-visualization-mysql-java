@@ -29,10 +29,13 @@ class AccountResourceTest {
   private static final String PASSWORD = "password";
   private static final String PASS_WORD = "PassWord";
   private static final String RECOVER = "{\"email\":\"admin@teacup.com\"}";
+  private static final String SIGN_UP =
+      "{\"email\":\"admin@teacup.com\", \"firstName\":\"first\", \"lastName\":\"last\", \"password\":\"password\"}";
   private static final String UNSUCCESSFUL = "unsuccessful";
 
   private final DataSource dataSource = mock(DataSource.class);
   private final HttpServletRequest httpServletRequest = mock(HttpServletRequest.class);
+  private final PreparedStatement preparedStatement = mock(PreparedStatement.class);
   private final ResultSet resultSet = mock(ResultSet.class);
 
   @Test
@@ -226,12 +229,88 @@ class AccountResourceTest {
     verifyNoMoreInteractions(resultSet);
   }
 
+  @Test
+  void signUp() throws SQLException {
+    when(resultSet.next()).thenReturn(false, true);
+
+    assertThat(callSignUp().getStatus()).isEqualTo(Status.OK.getStatusCode());
+
+    verify(dataSource).getConnection();
+    verifyNoMoreInteractions(dataSource);
+
+    verify(resultSet, times(2)).close();
+    verify(resultSet).getInt(1);
+    verify(resultSet, times(2)).next();
+    verifyNoMoreInteractions(resultSet);
+  }
+
+  @Test
+  void signUpWhenAccountExists() throws SQLException {
+    assertThat(callSignUp().getStatus()).isEqualTo(Status.CONFLICT.getStatusCode());
+
+    verify(dataSource).getConnection();
+    verifyNoMoreInteractions(dataSource);
+
+    verify(resultSet).close();
+    verify(resultSet).next();
+    verifyNoMoreInteractions(resultSet);
+  }
+
+  @Test
+  void signUpWhenAccountHistoryError() throws SQLException {
+    when(resultSet.next()).thenReturn(false, true);
+    when(preparedStatement.execute())
+        .thenReturn(true, true)
+        .thenThrow(new SQLException("test"))
+        .thenReturn(true);
+
+    assertThat(callSignUp().getStatus()).isEqualTo(Status.INTERNAL_SERVER_ERROR.getStatusCode());
+
+    verify(dataSource).getConnection();
+    verifyNoMoreInteractions(dataSource);
+
+    verify(resultSet, times(2)).close();
+    verify(resultSet).getInt(1);
+    verify(resultSet, times(2)).next();
+    verifyNoMoreInteractions(resultSet);
+  }
+
+  @Test
+  void signUpWhenAccountIdError() throws SQLException {
+    when(resultSet.next()).thenReturn(false);
+
+    assertThat(callSignUp().getStatus()).isEqualTo(Status.INTERNAL_SERVER_ERROR.getStatusCode());
+
+    verify(dataSource).getConnection();
+    verifyNoMoreInteractions(dataSource);
+
+    verify(resultSet, times(2)).close();
+    verify(resultSet, times(2)).next();
+    verifyNoMoreInteractions(resultSet);
+  }
+
+  @Test
+  void signUpWhenConnectionError() throws SQLException {
+    connectionError();
+
+    assertThat(callSignUp().getStatus()).isEqualTo(Status.INTERNAL_SERVER_ERROR.getStatusCode());
+
+    verify(dataSource).getConnection();
+    verifyNoMoreInteractions(dataSource);
+
+    verifyZeroInteractions(resultSet);
+  }
+
   private Response callLogIn() {
     return new AccountResource(dataSource).logIn(LOG_IN, httpServletRequest);
   }
 
   private Response callRecover() {
     return new AccountResource(dataSource).recover(RECOVER, httpServletRequest);
+  }
+
+  private Response callSignUp() {
+    return new AccountResource(dataSource).signUp(SIGN_UP);
   }
 
   private void connectionError() throws SQLException {
@@ -256,8 +335,6 @@ class AccountResourceTest {
   }
 
   private PreparedStatement setupPreparedStatement() throws SQLException {
-    var preparedStatement = mock(PreparedStatement.class);
-
     try (var query = preparedStatement.executeQuery()) {
       when(query).thenReturn(resultSet);
     }
