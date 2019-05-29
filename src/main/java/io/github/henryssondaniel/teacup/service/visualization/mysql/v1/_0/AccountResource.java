@@ -35,7 +35,7 @@ public class AccountResource {
   private static final String ERROR_RETRIEVE = "Could not retrieve the %s";
   private static final String INSERT = "INSERT INTO `teacup_visualization`.";
   private static final Logger LOGGER = Logger.getLogger(AccountResource.class.getName());
-  private static final String PASSWORD = "password";
+  private static final String SECRET = "password";
   private static final String SELECT = "SELECT * FROM `teacup_visualization`.";
 
   private final DataSource dataSource;
@@ -135,7 +135,7 @@ public class AccountResource {
       preparedStatement.setString(1, email);
       preparedStatement.setString(2, jsonObject.getString("firstName"));
       preparedStatement.setString(3, jsonObject.getString("lastName"));
-      preparedStatement.setString(4, jsonObject.getString(PASSWORD));
+      preparedStatement.setString(4, jsonObject.getString(SECRET));
 
       preparedStatement.execute();
 
@@ -303,8 +303,7 @@ public class AccountResource {
       var jsonObject = new JSONObject(data);
       preparedStatement.setString(1, jsonObject.getString(EMAIL));
 
-      return logIn(
-          connection, httpServletRequest, jsonObject.getString(PASSWORD), preparedStatement);
+      return logIn(connection, httpServletRequest, jsonObject.getString(SECRET), preparedStatement);
     }
   }
 
@@ -320,7 +319,7 @@ public class AccountResource {
               connection,
               httpServletRequest,
               resultSet.getInt("id"),
-              password.equals(resultSet.getString(PASSWORD)))
+              password.equals(resultSet.getString(SECRET)))
           : Response.status(Status.UNAUTHORIZED);
     }
   }
