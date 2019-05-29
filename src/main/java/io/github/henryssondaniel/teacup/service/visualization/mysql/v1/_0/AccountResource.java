@@ -28,6 +28,7 @@ import org.json.JSONObject;
  */
 @Path("{a:v1/account|v1.0/account|account}")
 public class AccountResource {
+  private static final String ACCOUNT_WHERE_EMAIL = "`account` WHERE email = ?";
   private static final String DELETE = "DELETE FROM `teacup_visualization`.";
   private static final String EMAIL = "email";
   private static final String ERROR = "An error occurred during %s";
@@ -298,8 +299,7 @@ public class AccountResource {
   private static ResponseBuilder logIn(
       Connection connection, String data, HttpServletRequest httpServletRequest)
       throws SQLException {
-    try (var preparedStatement =
-        connection.prepareStatement(SELECT + "`account` WHERE email = ?")) {
+    try (var preparedStatement = connection.prepareStatement(SELECT + ACCOUNT_WHERE_EMAIL)) {
       var jsonObject = new JSONObject(data);
       preparedStatement.setString(1, jsonObject.getString(EMAIL));
 
@@ -328,8 +328,7 @@ public class AccountResource {
   private static ResponseBuilder recover(
       Connection connection, String data, HttpServletRequest httpServletRequest)
       throws SQLException {
-    try (var preparedStatement =
-        connection.prepareStatement(SELECT + "`account` WHERE email = ?")) {
+    try (var preparedStatement = connection.prepareStatement(SELECT + ACCOUNT_WHERE_EMAIL)) {
       var jsonObject = new JSONObject(data);
       preparedStatement.setString(1, jsonObject.getString(EMAIL));
 
@@ -351,8 +350,7 @@ public class AccountResource {
   }
 
   private static ResponseBuilder signUp(Connection connection, String data) throws SQLException {
-    try (var preparedStatement =
-        connection.prepareStatement(SELECT + "`account` WHERE email = ?")) {
+    try (var preparedStatement = connection.prepareStatement(SELECT + ACCOUNT_WHERE_EMAIL)) {
       return signUp(connection, new JSONObject(data), preparedStatement);
     }
   }
