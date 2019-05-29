@@ -28,7 +28,15 @@ import org.json.JSONObject;
  */
 @Path("{a:v1/account|v1.0/account|account}")
 public class AccountResource {
+  private static final String DELETE = "DELETE FROM `teacup_visualization`.";
+  private static final String EMAIL = "email";
+  private static final String ERROR = "An error occurred during %s";
+  private static final String ERROR_RETRIEVE = "Could not retrieve the %s";
+  private static final String INSERT = "INSERT INTO `teacup_visualization`.";
   private static final Logger LOGGER = Logger.getLogger(AccountResource.class.getName());
+  private static final String PASSWORD = "password";
+  private static final String SELECT = "SELECT * FROM `teacup_visualization`.";
+
   private final DataSource dataSource;
 
   /**
@@ -55,7 +63,7 @@ public class AccountResource {
     try (var connection = dataSource.getConnection()) {
       responseBuilder = logIn(connection, data, httpServletRequest);
     } catch (SQLException e) {
-      LOGGER.log(Level.SEVERE, "An error occurred during log in", e);
+      LOGGER.log(Level.SEVERE, String.format(ERROR, "log in"), e);
       responseBuilder = Response.serverError();
     }
 
@@ -73,7 +81,7 @@ public class AccountResource {
     try (var connection = dataSource.getConnection()) {
       responseBuilder = recover(connection, data, httpServletRequest);
     } catch (SQLException e) {
-      LOGGER.log(Level.SEVERE, "An error occurred during recover", e);
+      LOGGER.log(Level.SEVERE, String.format(ERROR, "recover"), e);
       responseBuilder = Response.serverError();
     }
 
@@ -91,7 +99,7 @@ public class AccountResource {
     try (var connection = dataSource.getConnection()) {
       responseBuilder = signUp(connection, data);
     } catch (SQLException e) {
-      LOGGER.log(Level.SEVERE, "An error occurred during sign up", e);
+      LOGGER.log(Level.SEVERE, String.format(ERROR, "sign up"), e);
       responseBuilder = Response.serverError();
     }
 
@@ -113,7 +121,7 @@ public class AccountResource {
   private static int getLogInsId(Statement statement) throws SQLException {
     try (var resultSet = statement.getGeneratedKeys()) {
       if (resultSet.next()) return resultSet.getInt(1);
-      throw new SQLException("Could not retrieve the log ins ID");
+      throw new SQLException(String.format(ERROR_RETRIEVE, "log ins ID"));
     }
   }
 
@@ -121,12 +129,12 @@ public class AccountResource {
       Connection connection, JSONObject jsonObject, String email) throws SQLException {
     try (var preparedStatement =
         connection.prepareStatement(
-            "INSERT INTO `teacup_visualization`.`account`(email, first_name, last_name, password) VALUES(?, ?, ?, ?)",
+            INSERT + "`account`(email, first_name, last_name, password) VALUES(?, ?, ?, ?)",
             Statement.RETURN_GENERATED_KEYS)) {
       preparedStatement.setString(1, email);
       preparedStatement.setString(2, jsonObject.getString("firstName"));
       preparedStatement.setString(3, jsonObject.getString("lastName"));
-      preparedStatement.setString(4, jsonObject.getString("password"));
+      preparedStatement.setString(4, jsonObject.getString(PASSWORD));
 
       preparedStatement.execute();
 
@@ -138,8 +146,7 @@ public class AccountResource {
 
   private static void insertAccountRole(Connection connection, int id) throws SQLException {
     try (var preparedStatement =
-        connection.prepareStatement(
-            "INSERT INTO `teacup_visualization`.`account_role` SET account = ?")) {
+        connection.prepareStatement(INSERT + "`account_role` SET account = ?")) {
       preparedStatement.setInt(1, id);
       preparedStatement.execute();
     }
@@ -149,8 +156,7 @@ public class AccountResource {
       Connection connection, HttpServletRequest httpServletRequest, int logInsId, int successful)
       throws SQLException {
     try (var preparedStatement =
-        connection.prepareStatement(
-            "INSERT INTO `teacup_visualization`.`log_in`(ip, log_ins, successful) VALUES(?, ?, ?)")) {
+        connection.prepareStatement(INSERT + "`log_in`(ip, log_ins, successful) VALUES(?, ?, ?)")) {
       preparedStatement.setString(1, getIp(httpServletRequest));
       preparedStatement.setInt(2, logInsId);
       preparedStatement.setInt(3, successful);
@@ -163,7 +169,7 @@ public class AccountResource {
       throws SQLException {
     try (var preparedStatement =
         connection.prepareStatement(
-            "INSERT INTO `teacup_visualization`.`log_ins`(account, unsuccessful) VALUES(?, ?)",
+            INSERT + "`log_ins`(account, unsuccessful) VALUES(?, ?)",
             Statement.RETURN_GENERATED_KEYS)) {
       preparedStatement.setInt(1, id);
       preparedStatement.setInt(2, match ? 0 : 1);
@@ -230,8 +236,7 @@ public class AccountResource {
       Connection connection, HttpServletRequest httpServletRequest, ResultSet resultSet)
       throws SQLException {
     try (var preparedStatement =
-        connection.prepareStatement(
-            "INSERT INTO `teacup_visualization`.`recover`(account, ip) VALUES(?, ?)")) {
+        connection.prepareStatement(INSERT + "`recover`(account, ip) VALUES(?, ?)")) {
       preparedStatement.setInt(1, resultSet.getInt("id"));
       preparedStatement.setString(2, getIp(httpServletRequest));
 
@@ -241,14 +246,12 @@ public class AccountResource {
 
   private static void insertStatusHistory(Connection connection, int id) throws SQLException {
     try (var preparedStatement =
-        connection.prepareStatement(
-            "INSERT INTO `teacup_visualization`.`status_history` SET account = ?")) {
+        connection.prepareStatement(INSERT + "`status_history` SET account = ?")) {
       preparedStatement.setInt(1, id);
       preparedStatement.execute();
     } catch (SQLException e) {
       try (var preparedStatement =
-          connection.prepareStatement(
-              "DELETE FROM `teacup_visualization`.`account_role` WHERE account = ?")) {
+          connection.prepareStatement(DELETE + "`account_role` WHERE account = ?")) {
         preparedStatement.setInt(1, id);
         preparedStatement.execute();
       }
@@ -261,7 +264,7 @@ public class AccountResource {
       throws SQLException {
     try (var generatedKeys = statement.getGeneratedKeys()) {
       if (generatedKeys.next()) insertSubAccountRows(connection, generatedKeys.getInt(1));
-      else throw new SQLException("Could not retrieve the account ID");
+      else throw new SQLException(String.format(ERROR_RETRIEVE, "account ID"));
     }
   }
 
@@ -270,9 +273,7 @@ public class AccountResource {
       insertAccountRole(connection, id);
       insertStatusHistory(connection, id);
     } catch (SQLException e) {
-      try (var preparedStatement =
-          connection.prepareStatement(
-              "DELETE FROM `teacup_visualization`.`account` WHERE id = ?")) {
+      try (var preparedStatement = connection.prepareStatement(DELETE + "`account` WHERE id = ?")) {
         preparedStatement.setInt(1, id);
         preparedStatement.execute();
       }
@@ -289,8 +290,7 @@ public class AccountResource {
       Connection connection, HttpServletRequest httpServletRequest, int id, boolean match)
       throws SQLException {
     try (var preparedStatement =
-        connection.prepareStatement(
-            "SELECT * FROM `teacup_visualization`.`log_ins` WHERE account = ?")) {
+        connection.prepareStatement(SELECT + "`log_ins` WHERE account = ?")) {
       return insertLogIns(connection, httpServletRequest, id, match, preparedStatement);
     }
   }
@@ -299,13 +299,12 @@ public class AccountResource {
       Connection connection, String data, HttpServletRequest httpServletRequest)
       throws SQLException {
     try (var preparedStatement =
-        connection.prepareStatement(
-            "SELECT * FROM `teacup_visualization`.`account` WHERE email = ?")) {
+        connection.prepareStatement(SELECT + "`account` WHERE email = ?")) {
       var jsonObject = new JSONObject(data);
-      preparedStatement.setString(1, jsonObject.getString("email"));
+      preparedStatement.setString(1, jsonObject.getString(EMAIL));
 
       return logIn(
-          connection, httpServletRequest, jsonObject.getString("password"), preparedStatement);
+          connection, httpServletRequest, jsonObject.getString(PASSWORD), preparedStatement);
     }
   }
 
@@ -321,7 +320,7 @@ public class AccountResource {
               connection,
               httpServletRequest,
               resultSet.getInt("id"),
-              password.equals(resultSet.getString("password")))
+              password.equals(resultSet.getString(PASSWORD)))
           : Response.status(Status.UNAUTHORIZED);
     }
   }
@@ -330,10 +329,9 @@ public class AccountResource {
       Connection connection, String data, HttpServletRequest httpServletRequest)
       throws SQLException {
     try (var preparedStatement =
-        connection.prepareStatement(
-            "SELECT * FROM `teacup_visualization`.`account` WHERE email = ?")) {
+        connection.prepareStatement(SELECT + "`account` WHERE email = ?")) {
       var jsonObject = new JSONObject(data);
-      preparedStatement.setString(1, jsonObject.getString("email"));
+      preparedStatement.setString(1, jsonObject.getString(EMAIL));
 
       return insertRecover(connection, httpServletRequest, preparedStatement);
     }
@@ -342,7 +340,7 @@ public class AccountResource {
   private static ResponseBuilder signUp(
       Connection connection, JSONObject jsonObject, PreparedStatement preparedStatement)
       throws SQLException {
-    var email = jsonObject.getString("email");
+    var email = jsonObject.getString(EMAIL);
     preparedStatement.setString(1, email);
 
     try (var resultSet = preparedStatement.executeQuery()) {
@@ -354,8 +352,7 @@ public class AccountResource {
 
   private static ResponseBuilder signUp(Connection connection, String data) throws SQLException {
     try (var preparedStatement =
-        connection.prepareStatement(
-            "SELECT * FROM `teacup_visualization`.`account` WHERE email = ?")) {
+        connection.prepareStatement(SELECT + "`account` WHERE email = ?")) {
       return signUp(connection, new JSONObject(data), preparedStatement);
     }
   }
