@@ -14,6 +14,7 @@ import javax.sql.DataSource;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -36,7 +37,6 @@ public class AccountResource {
   private static final String INSERT = "INSERT INTO `teacup_visualization`.";
   private static final Logger LOGGER = Logger.getLogger(AccountResource.class.getName());
   private static final String SECRET = "password";
-  private static final String SELECT = "SELECT * FROM `teacup_visualization`.";
 
   private final DataSource dataSource;
 
@@ -56,6 +56,7 @@ public class AccountResource {
   @Consumes(MediaType.APPLICATION_JSON)
   @POST
   @Path("logIn")
+  @Produces(MediaType.APPLICATION_JSON)
   public Response logIn(String data, @Context HttpServletRequest httpServletRequest) {
     LOGGER.log(Level.FINE, "Log in");
 
@@ -184,20 +185,23 @@ public class AccountResource {
   private static ResponseBuilder insertLogIns(
       Connection connection,
       HttpServletRequest httpServletRequest,
-      int id,
-      boolean match,
-      PreparedStatement preparedStatement)
+      String password,
+      PreparedStatement preparedStatement,
+      ResultSet resultSet)
       throws SQLException {
+    var id = resultSet.getInt("id");
     preparedStatement.setInt(1, id);
 
-    try (var resultSet = preparedStatement.executeQuery()) {
+    try (var executeQuery = preparedStatement.executeQuery()) {
       int logInsId;
       var unsuccessful = 0;
 
-      if (resultSet.next()) {
-        logInsId = resultSet.getInt("id");
+      var match = password.equals(resultSet.getString(SECRET));
 
-        unsuccessful = resultSet.getInt("unsuccessful");
+      if (executeQuery.next()) {
+        logInsId = executeQuery.getInt("id");
+
+        unsuccessful = executeQuery.getInt("unsuccessful");
         unsuccessful = match && unsuccessful < 5 ? 0 : unsuccessful + 1;
 
         if (unsuccessful <= 5) updateLogIns(connection, id, unsuccessful);
@@ -208,7 +212,20 @@ public class AccountResource {
       if (unsuccessful <= 5) {
         insertLogIn(connection, httpServletRequest, logInsId, match ? 1 : 0);
 
-        responseBuilder = match ? Response.ok() : Response.status(Status.UNAUTHORIZED);
+        responseBuilder =
+            match
+                ? Response.ok()
+                    .entity(
+                        "{\"email\":\""
+                            + resultSet.getString("email")
+                            + "\", \"firstName\":\""
+                            + resultSet.getString("first_name")
+                            + "\", \"id\":\""
+                            + id
+                            + "\", \"lastName\":\""
+                            + resultSet.getString("last_name")
+                            + "\"}")
+                : Response.status(Status.UNAUTHORIZED);
       } else responseBuilder = Response.status(Status.NOT_ACCEPTABLE);
 
       return responseBuilder;
@@ -288,18 +305,24 @@ public class AccountResource {
   }
 
   private static ResponseBuilder logIn(
-      Connection connection, HttpServletRequest httpServletRequest, int id, boolean match)
+      Connection connection,
+      HttpServletRequest httpServletRequest,
+      String password,
+      ResultSet resultSet)
       throws SQLException {
     try (var preparedStatement =
-        connection.prepareStatement(SELECT + "`log_ins` WHERE account = ?")) {
-      return insertLogIns(connection, httpServletRequest, id, match, preparedStatement);
+        connection.prepareStatement(
+            "SELECT id, unsuccessful FROM `teacup_visualization`.`log_ins` WHERE account = ?")) {
+      return insertLogIns(connection, httpServletRequest, password, preparedStatement, resultSet);
     }
   }
 
   private static ResponseBuilder logIn(
       Connection connection, String data, HttpServletRequest httpServletRequest)
       throws SQLException {
-    try (var preparedStatement = connection.prepareStatement(SELECT + ACCOUNT_WHERE_EMAIL)) {
+    try (var preparedStatement =
+        connection.prepareStatement(
+            "SELECT * FROM `teacup_visualization`." + ACCOUNT_WHERE_EMAIL)) {
       var jsonObject = new JSONObject(data);
       preparedStatement.setString(1, jsonObject.getString(EMAIL));
 
@@ -315,11 +338,7 @@ public class AccountResource {
       throws SQLException {
     try (var resultSet = preparedStatement.executeQuery()) {
       return resultSet.next()
-          ? logIn(
-              connection,
-              httpServletRequest,
-              resultSet.getInt("id"),
-              password.equals(resultSet.getString(SECRET)))
+          ? logIn(connection, httpServletRequest, password, resultSet)
           : Response.status(Status.UNAUTHORIZED);
     }
   }
@@ -327,7 +346,9 @@ public class AccountResource {
   private static ResponseBuilder recover(
       Connection connection, String data, HttpServletRequest httpServletRequest)
       throws SQLException {
-    try (var preparedStatement = connection.prepareStatement(SELECT + ACCOUNT_WHERE_EMAIL)) {
+    try (var preparedStatement =
+        connection.prepareStatement(
+            "SELECT id FROM `teacup_visualization`." + ACCOUNT_WHERE_EMAIL)) {
       var jsonObject = new JSONObject(data);
       preparedStatement.setString(1, jsonObject.getString(EMAIL));
 
@@ -349,7 +370,9 @@ public class AccountResource {
   }
 
   private static ResponseBuilder signUp(Connection connection, String data) throws SQLException {
-    try (var preparedStatement = connection.prepareStatement(SELECT + ACCOUNT_WHERE_EMAIL)) {
+    try (var preparedStatement =
+        connection.prepareStatement(
+            "SELECT id FROM `teacup_visualization`." + ACCOUNT_WHERE_EMAIL)) {
       return signUp(connection, new JSONObject(data), preparedStatement);
     }
   }

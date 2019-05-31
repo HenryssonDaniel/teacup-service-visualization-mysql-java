@@ -70,6 +70,9 @@ class AccountResourceTest {
     verify(resultSet, times(2)).close();
     verify(resultSet, times(2)).getInt(ID);
     verify(resultSet).getInt(UNSUCCESSFUL);
+    verify(resultSet).getString("email");
+    verify(resultSet).getString("first_name");
+    verify(resultSet).getString("last_name");
     verify(resultSet).getString(PASSWORD);
     verify(resultSet, times(2)).next();
     verifyNoMoreInteractions(resultSet);
