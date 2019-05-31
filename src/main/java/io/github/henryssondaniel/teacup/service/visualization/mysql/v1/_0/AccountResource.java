@@ -217,7 +217,7 @@ public class AccountResource {
                 ? Response.ok()
                     .entity(
                         "{\"email\":\""
-                            + resultSet.getString("email")
+                            + resultSet.getString(EMAIL)
                             + "\", \"firstName\":\""
                             + resultSet.getString("first_name")
                             + "\", \"id\":\""
