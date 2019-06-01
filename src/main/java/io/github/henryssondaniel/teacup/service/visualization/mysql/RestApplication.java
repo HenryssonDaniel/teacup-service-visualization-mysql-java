@@ -66,7 +66,7 @@ public class RestApplication extends Application {
               + "  `first_name` VARCHAR(45) NOT NULL,"
               + ID
               + "  `last_name` VARCHAR(45) NOT NULL,"
-              + "  `password` VARCHAR(45) NOT NULL,"
+              + "  `password` CHAR(60) BINARY NOT NULL,"
               + PRIMARY_KEY
               + UNIQUE_INDEX
               + "  UNIQUE INDEX `email_UNIQUE` (`email` ASC) VISIBLE);");

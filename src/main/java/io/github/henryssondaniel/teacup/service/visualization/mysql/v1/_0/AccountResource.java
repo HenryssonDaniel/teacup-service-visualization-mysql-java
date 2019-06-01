@@ -21,6 +21,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
 import org.json.JSONObject;
+import org.mindrot.jbcrypt.BCrypt;
 
 /**
  * Account resource. Handles account related requests.
@@ -136,7 +137,7 @@ public class AccountResource {
       preparedStatement.setString(1, email);
       preparedStatement.setString(2, jsonObject.getString("firstName"));
       preparedStatement.setString(3, jsonObject.getString("lastName"));
-      preparedStatement.setString(4, jsonObject.getString(SECRET));
+      preparedStatement.setString(4, BCrypt.hashpw(jsonObject.getString(SECRET), BCrypt.gensalt()));
 
       preparedStatement.execute();
 
@@ -196,7 +197,7 @@ public class AccountResource {
       int logInsId;
       var unsuccessful = 0;
 
-      var match = password.equals(resultSet.getString(SECRET));
+      var match = BCrypt.checkpw(password, resultSet.getString(SECRET));
 
       if (executeQuery.next()) {
         logInsId = executeQuery.getInt("id");

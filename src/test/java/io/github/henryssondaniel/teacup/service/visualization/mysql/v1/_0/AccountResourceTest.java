@@ -21,13 +21,14 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mindrot.jbcrypt.BCrypt;
 
 class AccountResourceTest {
   private static final String ID = "id";
   private static final String LOG_IN =
       "{\"email\":\"admin@teacup.com\", \"password\":\"password\"}";
   private static final String PASSWORD = "password";
-  private static final String PASS_WORD = "PassWord";
+  private static final String PASS_WORD = BCrypt.hashpw("PassWord", BCrypt.gensalt());
   private static final String RECOVER = "{\"email\":\"admin@teacup.com\"}";
   private static final String SIGN_UP =
       "{\"email\":\"admin@teacup.com\", \"firstName\":\"first\", \"lastName\":\"last\", \"password\":\"password\"}";
@@ -93,7 +94,7 @@ class AccountResourceTest {
     verify(resultSet, times(2)).close();
     verify(resultSet, times(2)).getInt(ID);
     verify(resultSet).getInt(UNSUCCESSFUL);
-    verify(resultSet).getString("password");
+    verify(resultSet).getString(PASSWORD);
     verify(resultSet, times(2)).next();
     verifyNoMoreInteractions(resultSet);
   }
@@ -163,7 +164,7 @@ class AccountResourceTest {
     verify(resultSet, times(3)).close();
     verify(resultSet).getInt(1);
     verify(resultSet).getInt(ID);
-    verify(resultSet).getString("password");
+    verify(resultSet).getString(PASSWORD);
     verify(resultSet, times(3)).next();
     verifyNoMoreInteractions(resultSet);
   }
@@ -181,7 +182,7 @@ class AccountResourceTest {
 
     verify(resultSet, times(3)).close();
     verify(resultSet).getInt(ID);
-    verify(resultSet).getString("password");
+    verify(resultSet).getString(PASSWORD);
     verify(resultSet, times(3)).next();
     verifyNoMoreInteractions(resultSet);
   }
@@ -349,7 +350,7 @@ class AccountResourceTest {
   }
 
   private void setupResultSet() throws SQLException {
-    when(resultSet.getString(PASSWORD)).thenReturn(PASSWORD);
+    when(resultSet.getString(PASSWORD)).thenReturn(BCrypt.hashpw(PASSWORD, BCrypt.gensalt()));
     when(resultSet.next()).thenReturn(true);
   }
 }
