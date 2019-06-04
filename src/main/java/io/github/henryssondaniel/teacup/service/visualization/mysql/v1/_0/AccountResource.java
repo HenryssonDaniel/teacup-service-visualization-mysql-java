@@ -39,6 +39,7 @@ public class AccountResource {
   private static final String INSERT = "INSERT INTO `teacup_visualization`.";
   private static final Logger LOGGER = Logger.getLogger(AccountResource.class.getName());
   private static final String SECRET = "password";
+  private static final String SELECT_ID = "SELECT id FROM `teacup_visualization`.";
 
   private final DataSource dataSource;
 
@@ -367,9 +368,7 @@ public class AccountResource {
   private static ResponseBuilder recover(
       Connection connection, String data, HttpServletRequest httpServletRequest)
       throws SQLException {
-    try (var preparedStatement =
-        connection.prepareStatement(
-            "SELECT id FROM `teacup_visualization`." + ACCOUNT_WHERE_EMAIL)) {
+    try (var preparedStatement = connection.prepareStatement(SELECT_ID + ACCOUNT_WHERE_EMAIL)) {
       var jsonObject = new JSONObject(data);
       preparedStatement.setString(1, jsonObject.getString(EMAIL));
 
@@ -391,9 +390,7 @@ public class AccountResource {
   }
 
   private static ResponseBuilder signUp(Connection connection, String data) throws SQLException {
-    try (var preparedStatement =
-        connection.prepareStatement(
-            "SELECT id FROM `teacup_visualization`." + ACCOUNT_WHERE_EMAIL)) {
+    try (var preparedStatement = connection.prepareStatement(SELECT_ID + ACCOUNT_WHERE_EMAIL)) {
       return signUp(connection, new JSONObject(data), preparedStatement);
     }
   }
@@ -413,9 +410,7 @@ public class AccountResource {
   private static ResponseBuilder verify(
       Connection connection, String data, HttpServletRequest httpServletRequest)
       throws SQLException {
-    try (var preparedStatement =
-        connection.prepareStatement(
-            "SELECT id FROM `teacup_visualization`." + ACCOUNT_WHERE_EMAIL)) {
+    try (var preparedStatement = connection.prepareStatement(SELECT_ID + ACCOUNT_WHERE_EMAIL)) {
       preparedStatement.setString(1, new JSONObject(data).getString(EMAIL));
 
       return verify(connection, httpServletRequest, preparedStatement);
