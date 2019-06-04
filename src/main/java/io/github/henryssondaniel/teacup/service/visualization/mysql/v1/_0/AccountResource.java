@@ -35,6 +35,7 @@ public class AccountResource {
   private static final String EMAIL = "email";
   private static final String ERROR = "An error occurred during %s";
   private static final String ERROR_RETRIEVE = "Could not retrieve the %s";
+  private static final String ID = "id";
   private static final String INSERT = "INSERT INTO `teacup_visualization`.";
   private static final Logger LOGGER = Logger.getLogger(AccountResource.class.getName());
   private static final String SECRET = "password";
@@ -103,6 +104,25 @@ public class AccountResource {
       responseBuilder = signUp(connection, data);
     } catch (SQLException e) {
       LOGGER.log(Level.SEVERE, String.format(ERROR, "sign up"), e);
+      responseBuilder = Response.serverError();
+    }
+
+    return responseBuilder.build();
+  }
+
+  @Consumes(MediaType.APPLICATION_JSON)
+  @POST
+  @Path("verify")
+  @Produces(MediaType.APPLICATION_JSON)
+  public Response verify(String data, @Context HttpServletRequest httpServletRequest) {
+    LOGGER.log(Level.FINE, "Verify");
+
+    ResponseBuilder responseBuilder;
+
+    try (var connection = dataSource.getConnection()) {
+      responseBuilder = verify(connection, data, httpServletRequest);
+    } catch (SQLException e) {
+      LOGGER.log(Level.SEVERE, String.format(ERROR, "verify"), e);
       responseBuilder = Response.serverError();
     }
 
@@ -190,7 +210,7 @@ public class AccountResource {
       PreparedStatement preparedStatement,
       ResultSet resultSet)
       throws SQLException {
-    var id = resultSet.getInt("id");
+    var id = resultSet.getInt(ID);
     preparedStatement.setInt(1, id);
 
     try (var executeQuery = preparedStatement.executeQuery()) {
@@ -200,7 +220,7 @@ public class AccountResource {
       var match = BCrypt.checkpw(password, resultSet.getString(SECRET));
 
       if (executeQuery.next()) {
-        logInsId = executeQuery.getInt("id");
+        logInsId = executeQuery.getInt(ID);
 
         unsuccessful = executeQuery.getInt("unsuccessful");
         unsuccessful = match && unsuccessful < 5 ? 0 : unsuccessful + 1;
@@ -256,7 +276,7 @@ public class AccountResource {
       throws SQLException {
     try (var preparedStatement =
         connection.prepareStatement(INSERT + "`recover`(account, ip) VALUES(?, ?)")) {
-      preparedStatement.setInt(1, resultSet.getInt("id"));
+      preparedStatement.setInt(1, resultSet.getInt(ID));
       preparedStatement.setString(2, getIp(httpServletRequest));
 
       preparedStatement.execute();
@@ -388,5 +408,44 @@ public class AccountResource {
 
       preparedStatement.execute();
     }
+  }
+
+  private static ResponseBuilder verify(
+      Connection connection, String data, HttpServletRequest httpServletRequest)
+      throws SQLException {
+    try (var preparedStatement =
+        connection.prepareStatement(
+            "SELECT id FROM `teacup_visualization`." + ACCOUNT_WHERE_EMAIL)) {
+      preparedStatement.setString(1, new JSONObject(data).getString(EMAIL));
+
+      return verify(connection, httpServletRequest, preparedStatement);
+    }
+  }
+
+  private static ResponseBuilder verify(
+      Connection connection,
+      HttpServletRequest httpServletRequest,
+      PreparedStatement preparedStatement)
+      throws SQLException {
+    try (var resultSet = preparedStatement.executeQuery()) {
+      return resultSet.next()
+          ? verify(connection, httpServletRequest, resultSet)
+          : Response.status(Status.NO_CONTENT);
+    }
+  }
+
+  private static ResponseBuilder verify(
+      Connection connection, HttpServletRequest httpServletRequest, ResultSet resultSet)
+      throws SQLException {
+    try (var preparedStatement =
+        connection.prepareStatement(
+            "INSERT INTO `teacup_visualization`.`verified`(account, ip) VALUES(?, ?)")) {
+      preparedStatement.setInt(1, resultSet.getInt(ID));
+      preparedStatement.setString(2, getIp(httpServletRequest));
+
+      preparedStatement.execute();
+    }
+
+    return Response.ok();
   }
 }

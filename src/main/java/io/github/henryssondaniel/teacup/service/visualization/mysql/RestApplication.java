@@ -27,6 +27,7 @@ public class RestApplication extends Application {
   private static final String FOREIGN_KEY_ACCOUNT =
       " FOREIGN KEY (`account`) REFERENCES `teacup_visualization`.`account` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION";
   private static final String ID = "`id` INT UNSIGNED NOT NULL AUTO_INCREMENT,";
+  private static final String IP = "`ip` VARCHAR(39) NOT NULL,";
   private static final Logger LOGGER = Logger.getLogger(RestApplication.class.getName());
   private static final String NO_ACTION = " ON DELETE NO ACTION ON UPDATE NO ACTION);";
   private static final String PRIMARY_KEY = " PRIMARY KEY (`id`),";
@@ -101,7 +102,7 @@ public class RestApplication extends Application {
           CREATE_TABLE
               + ".`log_in` ("
               + ID
-              + "  `ip` VARCHAR(39) NOT NULL,"
+              + IP
               + "  `log_ins` INT UNSIGNED NOT NULL,"
               + "  `successful` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,"
               + TIME
@@ -139,7 +140,7 @@ public class RestApplication extends Application {
               + ".`recover` ("
               + ACCOUNT
               + ID
-              + "  `ip` VARCHAR(39) NOT NULL,"
+              + IP
               + TIME
               + PRIMARY_KEY
               + UNIQUE_INDEX
@@ -207,6 +208,7 @@ public class RestApplication extends Application {
               + ".`verified` ("
               + ACCOUNT
               + ID
+              + IP
               + TIME
               + PRIMARY_KEY
               + "  UNIQUE INDEX `account_UNIQUE` (`account` ASC) VISIBLE,"

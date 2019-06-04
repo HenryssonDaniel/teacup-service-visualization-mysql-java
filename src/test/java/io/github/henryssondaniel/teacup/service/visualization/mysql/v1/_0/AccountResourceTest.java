@@ -24,12 +24,12 @@ import org.junit.jupiter.api.Test;
 import org.mindrot.jbcrypt.BCrypt;
 
 class AccountResourceTest {
+  private static final String EMAIL = "{\"email\":\"admin@teacup.com\"}";
   private static final String ID = "id";
   private static final String LOG_IN =
       "{\"email\":\"admin@teacup.com\", \"password\":\"password\"}";
   private static final String PASSWORD = "password";
   private static final String PASS_WORD = BCrypt.hashpw("PassWord", BCrypt.gensalt());
-  private static final String RECOVER = "{\"email\":\"admin@teacup.com\"}";
   private static final String SIGN_UP =
       "{\"email\":\"admin@teacup.com\", \"firstName\":\"first\", \"lastName\":\"last\", \"password\":\"password\"}";
   private static final String UNSUCCESSFUL = "unsuccessful";
@@ -305,16 +305,66 @@ class AccountResourceTest {
     verifyZeroInteractions(resultSet);
   }
 
+  @Test
+  void verifyNoError() throws SQLException {
+    assertThat(callVerify().getStatus()).isEqualTo(Status.OK.getStatusCode());
+
+    verify(dataSource).getConnection();
+    verifyNoMoreInteractions(dataSource);
+
+    verify(httpServletRequest, times(5)).getHeader(anyString());
+    verify(httpServletRequest).getRemoteAddr();
+    verifyNoMoreInteractions(httpServletRequest);
+
+    verify(resultSet).close();
+    verify(resultSet).getInt(ID);
+    verify(resultSet).next();
+    verifyNoMoreInteractions(resultSet);
+  }
+
+  @Test
+  void verifyWhenAccountIdError() throws SQLException {
+    when(resultSet.next()).thenReturn(false);
+
+    assertThat(callVerify().getStatus()).isEqualTo(Status.NO_CONTENT.getStatusCode());
+
+    verify(dataSource).getConnection();
+    verifyNoMoreInteractions(dataSource);
+
+    verifyZeroInteractions(httpServletRequest);
+
+    verify(resultSet).close();
+    verify(resultSet).next();
+    verifyNoMoreInteractions(resultSet);
+  }
+
+  @Test
+  void verifyWhenConnectionError() throws SQLException {
+    connectionError();
+
+    assertThat(callVerify().getStatus()).isEqualTo(Status.INTERNAL_SERVER_ERROR.getStatusCode());
+
+    verify(dataSource).getConnection();
+    verifyNoMoreInteractions(dataSource);
+
+    verifyZeroInteractions(httpServletRequest);
+    verifyZeroInteractions(resultSet);
+  }
+
   private Response callLogIn() {
     return new AccountResource(dataSource).logIn(LOG_IN, httpServletRequest);
   }
 
   private Response callRecover() {
-    return new AccountResource(dataSource).recover(RECOVER, httpServletRequest);
+    return new AccountResource(dataSource).recover(EMAIL, httpServletRequest);
   }
 
   private Response callSignUp() {
     return new AccountResource(dataSource).signUp(SIGN_UP);
+  }
+
+  private Response callVerify() {
+    return new AccountResource(dataSource).verify(EMAIL, httpServletRequest);
   }
 
   private void connectionError() throws SQLException {
