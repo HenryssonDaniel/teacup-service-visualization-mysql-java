@@ -104,7 +104,7 @@ public class RestApplication extends Application {
               + ID
               + IP
               + "  `log_ins` INT UNSIGNED NOT NULL,"
-              + "  `successful` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,"
+              + "  `successful` TINYINT(1) UNSIGNED NOT NULL,"
               + TIME
               + PRIMARY_KEY
               + UNIQUE_INDEX
@@ -139,6 +139,7 @@ public class RestApplication extends Application {
           CREATE_TABLE
               + ".`password_history` ("
               + ACCOUNT
+              + "  `authorized` TINYINT(1) UNSIGNED NOT NULL,"
               + ID
               + IP
               + "  `password` CHAR(60) BINARY NOT NULL,"

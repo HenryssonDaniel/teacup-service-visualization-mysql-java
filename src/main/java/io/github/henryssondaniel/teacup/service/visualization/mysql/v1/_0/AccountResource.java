@@ -58,6 +58,24 @@ public class AccountResource {
 
   @Consumes(MediaType.APPLICATION_JSON)
   @POST
+  @Path("changePassword")
+  public Response changePassword(String data, @Context HttpServletRequest httpServletRequest) {
+    LOGGER.log(Level.FINE, "Change password");
+
+    ResponseBuilder responseBuilder;
+
+    try (var connection = dataSource.getConnection()) {
+      responseBuilder = changePassword(connection, data, httpServletRequest);
+    } catch (SQLException e) {
+      LOGGER.log(Level.SEVERE, String.format(ERROR, "change password"), e);
+      responseBuilder = Response.serverError();
+    }
+
+    return responseBuilder.build();
+  }
+
+  @Consumes(MediaType.APPLICATION_JSON)
+  @POST
   @Path("logIn")
   @Produces(MediaType.APPLICATION_JSON)
   public Response logIn(String data, @Context HttpServletRequest httpServletRequest) {
@@ -128,6 +146,16 @@ public class AccountResource {
     }
 
     return responseBuilder.build();
+  }
+
+  private static ResponseBuilder changePassword(
+      Connection connection, String data, HttpServletRequest httpServletRequest)
+      throws SQLException {
+    try (var preparedStatement = connection.prepareStatement(SELECT_ID + ACCOUNT_WHERE_EMAIL)) {
+      preparedStatement.setString(1, new JSONObject(data).getString(EMAIL));
+
+      return insertPasswordHistory(connection, data, httpServletRequest, preparedStatement);
+    }
   }
 
   private static String getIp(HttpServletRequest httpServletRequest) {
@@ -257,15 +285,46 @@ public class AccountResource {
     }
   }
 
+  private static ResponseBuilder insertPasswordHistory(
+      Connection connection,
+      String data,
+      HttpServletRequest httpServletRequest,
+      PreparedStatement preparedStatement)
+      throws SQLException {
+    ResponseBuilder responseBuilder;
+
+    try (var resultSet = preparedStatement.executeQuery()) {
+      if (resultSet.next()) {
+        var jsonObject = new JSONObject(data);
+
+        insertPasswordHistory(
+            jsonObject.getBoolean("authorized"),
+            connection,
+            httpServletRequest,
+            resultSet.getInt(ID),
+            jsonObject);
+
+        responseBuilder = Response.ok();
+      } else responseBuilder = Response.status(Status.NO_CONTENT);
+    }
+
+    return responseBuilder;
+  }
+
   private static void insertPasswordHistory(
-      Connection connection, HttpServletRequest httpServletRequest, int id, JSONObject jsonObject)
+      boolean authorized,
+      Connection connection,
+      HttpServletRequest httpServletRequest,
+      int id,
+      JSONObject jsonObject)
       throws SQLException {
     try (var preparedStatement =
         connection.prepareStatement(
-            INSERT + "`password_history`(account, ip, password) VALUES(?, ?, ?)")) {
+            INSERT + "`password_history`(account, authorized, ip, password) VALUES(?, ?, ?, ?)")) {
       preparedStatement.setInt(1, id);
-      preparedStatement.setString(2, getIp(httpServletRequest));
-      preparedStatement.setString(3, BCrypt.hashpw(jsonObject.getString(SECRET), BCrypt.gensalt()));
+      preparedStatement.setInt(2, authorized ? 1 : 0);
+      preparedStatement.setString(3, getIp(httpServletRequest));
+      preparedStatement.setString(4, BCrypt.hashpw(jsonObject.getString(SECRET), BCrypt.gensalt()));
 
       preparedStatement.execute();
     }
@@ -334,7 +393,7 @@ public class AccountResource {
       Connection connection, HttpServletRequest httpServletRequest, int id, JSONObject jsonObject)
       throws SQLException {
     try {
-      insertPasswordHistory(connection, httpServletRequest, id, jsonObject);
+      insertPasswordHistory(false, connection, httpServletRequest, id, jsonObject);
       insertAccountRole(connection, id);
       insertStatusHistory(connection, id);
     } catch (SQLException e) {

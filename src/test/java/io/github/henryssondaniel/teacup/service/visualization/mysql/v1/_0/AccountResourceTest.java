@@ -24,6 +24,8 @@ import org.junit.jupiter.api.Test;
 import org.mindrot.jbcrypt.BCrypt;
 
 class AccountResourceTest {
+  private static final String CHANGE_PASSWORD =
+      "{\"authorized\":\"true\", \"email\":\"admin@teacup.com\", \"password\":\"password\"}";
   private static final String EMAIL = "{\"email\":\"admin@teacup.com\"}";
   private static final String ID = "id";
   private static final String LOG_IN =
@@ -55,6 +57,53 @@ class AccountResourceTest {
     }
 
     when(httpServletRequest.getHeader(anyString())).thenReturn(null, "", "unknown");
+  }
+
+  @Test
+  void changePassword() throws SQLException {
+    assertThat(callChangePassword().getStatus()).isEqualTo(Status.OK.getStatusCode());
+
+    verify(dataSource).getConnection();
+    verifyNoMoreInteractions(dataSource);
+
+    verify(httpServletRequest, times(5)).getHeader(anyString());
+    verify(httpServletRequest).getRemoteAddr();
+    verifyNoMoreInteractions(httpServletRequest);
+
+    verify(resultSet).close();
+    verify(resultSet).getInt(ID);
+    verify(resultSet).next();
+    verifyNoMoreInteractions(resultSet);
+  }
+
+  @Test
+  void changePasswordWhenConnectionError() throws SQLException {
+    connectionError();
+
+    assertThat(callChangePassword().getStatus())
+        .isEqualTo(Status.INTERNAL_SERVER_ERROR.getStatusCode());
+
+    verify(dataSource).getConnection();
+    verifyNoMoreInteractions(dataSource);
+
+    verifyZeroInteractions(httpServletRequest);
+    verifyZeroInteractions(resultSet);
+  }
+
+  @Test
+  void changePasswordWhenNoAccount() throws SQLException {
+    when(resultSet.next()).thenReturn(false);
+
+    assertThat(callChangePassword().getStatus()).isEqualTo(Status.NO_CONTENT.getStatusCode());
+
+    verify(dataSource).getConnection();
+    verifyNoMoreInteractions(dataSource);
+
+    verifyZeroInteractions(httpServletRequest);
+
+    verify(resultSet).close();
+    verify(resultSet).next();
+    verifyNoMoreInteractions(resultSet);
   }
 
   @Test
@@ -364,6 +413,10 @@ class AccountResourceTest {
 
     verifyZeroInteractions(httpServletRequest);
     verifyZeroInteractions(resultSet);
+  }
+
+  private Response callChangePassword() {
+    return new AccountResource(dataSource).changePassword(CHANGE_PASSWORD, httpServletRequest);
   }
 
   private Response callLogIn() {
