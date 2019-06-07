@@ -242,6 +242,10 @@ class AccountResourceTest {
     verify(dataSource).getConnection();
     verifyNoMoreInteractions(dataSource);
 
+    verify(httpServletRequest, times(5)).getHeader(anyString());
+    verify(httpServletRequest).getRemoteAddr();
+    verifyNoMoreInteractions(httpServletRequest);
+
     verify(resultSet, times(2)).close();
     verify(resultSet).getInt(1);
     verify(resultSet, times(2)).next();
@@ -255,6 +259,8 @@ class AccountResourceTest {
     verify(dataSource).getConnection();
     verifyNoMoreInteractions(dataSource);
 
+    verifyZeroInteractions(httpServletRequest);
+
     verify(resultSet).close();
     verify(resultSet).next();
     verifyNoMoreInteractions(resultSet);
@@ -264,7 +270,7 @@ class AccountResourceTest {
   void signUpWhenAccountHistoryError() throws SQLException {
     when(resultSet.next()).thenReturn(false, true);
     when(preparedStatement.execute())
-        .thenReturn(true, true)
+        .thenReturn(true, true, true)
         .thenThrow(new SQLException("test"))
         .thenReturn(true);
 
@@ -272,6 +278,12 @@ class AccountResourceTest {
 
     verify(dataSource).getConnection();
     verifyNoMoreInteractions(dataSource);
+
+    verify(httpServletRequest, times(5)).getHeader(anyString());
+    verify(httpServletRequest).getRemoteAddr();
+    verifyNoMoreInteractions(httpServletRequest);
+
+    verifyZeroInteractions(httpServletRequest);
 
     verify(resultSet, times(2)).close();
     verify(resultSet).getInt(1);
@@ -288,6 +300,8 @@ class AccountResourceTest {
     verify(dataSource).getConnection();
     verifyNoMoreInteractions(dataSource);
 
+    verifyZeroInteractions(httpServletRequest);
+
     verify(resultSet, times(2)).close();
     verify(resultSet, times(2)).next();
     verifyNoMoreInteractions(resultSet);
@@ -302,6 +316,7 @@ class AccountResourceTest {
     verify(dataSource).getConnection();
     verifyNoMoreInteractions(dataSource);
 
+    verifyZeroInteractions(httpServletRequest);
     verifyZeroInteractions(resultSet);
   }
 
@@ -360,7 +375,7 @@ class AccountResourceTest {
   }
 
   private Response callSignUp() {
-    return new AccountResource(dataSource).signUp(SIGN_UP);
+    return new AccountResource(dataSource).signUp(SIGN_UP, httpServletRequest);
   }
 
   private Response callVerify() {

@@ -96,13 +96,13 @@ public class AccountResource {
   @Consumes(MediaType.APPLICATION_JSON)
   @POST
   @Path("signUp")
-  public Response signUp(String data) {
+  public Response signUp(String data, @Context HttpServletRequest httpServletRequest) {
     LOGGER.log(Level.FINE, "Sign up");
 
     ResponseBuilder responseBuilder;
 
     try (var connection = dataSource.getConnection()) {
-      responseBuilder = signUp(connection, data);
+      responseBuilder = signUp(connection, data, httpServletRequest);
     } catch (SQLException e) {
       LOGGER.log(Level.SEVERE, String.format(ERROR, "sign up"), e);
       responseBuilder = Response.serverError();
@@ -150,19 +150,22 @@ public class AccountResource {
   }
 
   private static ResponseBuilder insertAccount(
-      Connection connection, JSONObject jsonObject, String email) throws SQLException {
+      Connection connection,
+      String email,
+      HttpServletRequest httpServletRequest,
+      JSONObject jsonObject)
+      throws SQLException {
     try (var preparedStatement =
         connection.prepareStatement(
-            INSERT + "`account`(email, first_name, last_name, password) VALUES(?, ?, ?, ?)",
+            INSERT + "`account`(email, first_name, last_name) VALUES(?, ?, ?)",
             Statement.RETURN_GENERATED_KEYS)) {
       preparedStatement.setString(1, email);
       preparedStatement.setString(2, jsonObject.getString("firstName"));
       preparedStatement.setString(3, jsonObject.getString("lastName"));
-      preparedStatement.setString(4, BCrypt.hashpw(jsonObject.getString(SECRET), BCrypt.gensalt()));
 
       preparedStatement.execute();
 
-      insertSubAccountRows(connection, preparedStatement);
+      insertSubAccountRows(connection, httpServletRequest, jsonObject, preparedStatement);
     }
 
     return Response.ok();
@@ -254,6 +257,20 @@ public class AccountResource {
     }
   }
 
+  private static void insertPasswordHistory(
+      Connection connection, HttpServletRequest httpServletRequest, int id, JSONObject jsonObject)
+      throws SQLException {
+    try (var preparedStatement =
+        connection.prepareStatement(
+            INSERT + "`account_role`(account, ip, password) VALUES(?, ?, ?)")) {
+      preparedStatement.setInt(1, id);
+      preparedStatement.setString(2, getIp(httpServletRequest));
+      preparedStatement.setString(3, BCrypt.hashpw(jsonObject.getString(SECRET), BCrypt.gensalt()));
+
+      preparedStatement.execute();
+    }
+  }
+
   private static ResponseBuilder insertRecover(
       Connection connection,
       HttpServletRequest httpServletRequest,
@@ -300,16 +317,24 @@ public class AccountResource {
     }
   }
 
-  private static void insertSubAccountRows(Connection connection, Statement statement)
+  private static void insertSubAccountRows(
+      Connection connection,
+      HttpServletRequest httpServletRequest,
+      JSONObject jsonObject,
+      Statement statement)
       throws SQLException {
     try (var generatedKeys = statement.getGeneratedKeys()) {
-      if (generatedKeys.next()) insertSubAccountRows(connection, generatedKeys.getInt(1));
+      if (generatedKeys.next())
+        insertSubAccountRows(connection, httpServletRequest, generatedKeys.getInt(1), jsonObject);
       else throw new SQLException(String.format(ERROR_RETRIEVE, "account ID"));
     }
   }
 
-  private static void insertSubAccountRows(Connection connection, int id) throws SQLException {
+  private static void insertSubAccountRows(
+      Connection connection, HttpServletRequest httpServletRequest, int id, JSONObject jsonObject)
+      throws SQLException {
     try {
+      insertPasswordHistory(connection, httpServletRequest, id, jsonObject);
       insertAccountRole(connection, id);
       insertStatusHistory(connection, id);
     } catch (SQLException e) {
@@ -369,15 +394,17 @@ public class AccountResource {
       Connection connection, String data, HttpServletRequest httpServletRequest)
       throws SQLException {
     try (var preparedStatement = connection.prepareStatement(SELECT_ID + ACCOUNT_WHERE_EMAIL)) {
-      var jsonObject = new JSONObject(data);
-      preparedStatement.setString(1, jsonObject.getString(EMAIL));
+      preparedStatement.setString(1, new JSONObject(data).getString(EMAIL));
 
       return insertRecover(connection, httpServletRequest, preparedStatement);
     }
   }
 
   private static ResponseBuilder signUp(
-      Connection connection, JSONObject jsonObject, PreparedStatement preparedStatement)
+      Connection connection,
+      HttpServletRequest httpServletRequest,
+      JSONObject jsonObject,
+      PreparedStatement preparedStatement)
       throws SQLException {
     var email = jsonObject.getString(EMAIL);
     preparedStatement.setString(1, email);
@@ -385,13 +412,15 @@ public class AccountResource {
     try (var resultSet = preparedStatement.executeQuery()) {
       return resultSet.next()
           ? Response.status(Status.CONFLICT)
-          : insertAccount(connection, jsonObject, email);
+          : insertAccount(connection, email, httpServletRequest, jsonObject);
     }
   }
 
-  private static ResponseBuilder signUp(Connection connection, String data) throws SQLException {
+  private static ResponseBuilder signUp(
+      Connection connection, String data, HttpServletRequest httpServletRequest)
+      throws SQLException {
     try (var preparedStatement = connection.prepareStatement(SELECT_ID + ACCOUNT_WHERE_EMAIL)) {
-      return signUp(connection, new JSONObject(data), preparedStatement);
+      return signUp(connection, httpServletRequest, new JSONObject(data), preparedStatement);
     }
   }
 
