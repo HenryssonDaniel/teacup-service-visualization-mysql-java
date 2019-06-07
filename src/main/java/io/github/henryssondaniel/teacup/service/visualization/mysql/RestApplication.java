@@ -170,19 +170,6 @@ public class RestApplication extends Application {
     }
   }
 
-  private static void createStatus(Connection connection) throws SQLException {
-    try (var statement = connection.createStatement()) {
-      statement.execute(
-          CREATE_TABLE
-              + ".`status` ("
-              + ID
-              + "  `name` VARCHAR(45) NOT NULL,"
-              + PRIMARY_KEY
-              + UNIQUE_INDEX
-              + "  UNIQUE INDEX `name_UNIQUE` (`name` ASC) VISIBLE);");
-    }
-  }
-
   private static void createStatusHistory(Connection connection) throws SQLException {
     try (var statement = connection.createStatement()) {
       statement.execute(
@@ -230,7 +217,6 @@ public class RestApplication extends Application {
       insertRoles(connection);
 
       createAccountRole(connection);
-      createStatus(connection);
       createStatusHistory(connection);
       createVerified(connection);
       createRecover(connection);
