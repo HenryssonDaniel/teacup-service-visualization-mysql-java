@@ -24,6 +24,7 @@ import javax.ws.rs.core.Application;
 public class RestApplication extends Application {
   private static final String ACCOUNT = "`account` INT UNSIGNED NOT NULL,";
   private static final String CREATE_TABLE = "CREATE TABLE IF NOT EXISTS `teacup_visualization`";
+  private static final String END = ");";
   private static final String FOREIGN_KEY_ACCOUNT =
       " FOREIGN KEY (`account`) REFERENCES `teacup_visualization`.`account` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION";
   private static final String ID = "`id` INT UNSIGNED NOT NULL AUTO_INCREMENT,";
@@ -67,7 +68,6 @@ public class RestApplication extends Application {
               + "  `first_name` VARCHAR(45) NOT NULL,"
               + ID
               + "  `last_name` VARCHAR(45) NOT NULL,"
-              + "  `password` CHAR(60) BINARY NOT NULL,"
               + PRIMARY_KEY
               + UNIQUE_INDEX
               + "  UNIQUE INDEX `email_UNIQUE` (`email` ASC) VISIBLE);");
@@ -129,7 +129,26 @@ public class RestApplication extends Application {
               + "  UNIQUE INDEX `account_UNIQUE` (`account` ASC) VISIBLE,"
               + "  CONSTRAINT `log_ins.account`"
               + FOREIGN_KEY_ACCOUNT
-              + ");");
+              + END);
+    }
+  }
+
+  private static void createPasswordHistory(Connection connection) throws SQLException {
+    try (var statement = connection.createStatement()) {
+      statement.execute(
+          CREATE_TABLE
+              + ".`password_history` ("
+              + ACCOUNT
+              + ID
+              + IP
+              + "  `password` CHAR(60) BINARY NOT NULL,"
+              + TIME
+              + PRIMARY_KEY
+              + UNIQUE_INDEX
+              + "  INDEX `password_history.account_idx` (`account` ASC) VISIBLE,"
+              + "  CONSTRAINT `password_history.account`"
+              + FOREIGN_KEY_ACCOUNT
+              + END);
     }
   }
 
@@ -147,7 +166,7 @@ public class RestApplication extends Application {
               + "  INDEX `recover.account_idx` (`account` ASC) VISIBLE,"
               + "  CONSTRAINT `recover.account`"
               + FOREIGN_KEY_ACCOUNT
-              + ");");
+              + END);
     }
   }
 
@@ -184,7 +203,7 @@ public class RestApplication extends Application {
               + "  INDEX `status_history.account_idx` (`account` ASC) VISIBLE,"
               + "  CONSTRAINT `status_history.account`"
               + FOREIGN_KEY_ACCOUNT
-              + ");");
+              + END);
     }
   }
 
@@ -202,7 +221,7 @@ public class RestApplication extends Application {
               + UNIQUE_INDEX
               + "  CONSTRAINT `verified.account`"
               + FOREIGN_KEY_ACCOUNT
-              + ");");
+              + END);
     }
   }
 
@@ -210,16 +229,16 @@ public class RestApplication extends Application {
     try (var connection = dataSource.getConnection()) {
       createSchema(connection);
       createAccount(connection);
-      createLogIns(connection);
-      createLogIn(connection);
       createRole(connection);
-
       insertRoles(connection);
 
       createAccountRole(connection);
+      createLogIns(connection);
+      createLogIn(connection);
+      createPasswordHistory(connection);
+      createRecover(connection);
       createStatusHistory(connection);
       createVerified(connection);
-      createRecover(connection);
     } catch (SQLException e) {
       LOGGER.log(Level.SEVERE, "Could not initialize the database", e);
     }
