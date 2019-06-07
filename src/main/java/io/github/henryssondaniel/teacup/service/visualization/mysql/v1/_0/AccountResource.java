@@ -262,7 +262,7 @@ public class AccountResource {
       throws SQLException {
     try (var preparedStatement =
         connection.prepareStatement(
-            INSERT + "`account_role`(account, ip, password) VALUES(?, ?, ?)")) {
+            INSERT + "`password_history`(account, ip, password) VALUES(?, ?, ?)")) {
       preparedStatement.setInt(1, id);
       preparedStatement.setString(2, getIp(httpServletRequest));
       preparedStatement.setString(3, BCrypt.hashpw(jsonObject.getString(SECRET), BCrypt.gensalt()));
@@ -369,7 +369,12 @@ public class AccountResource {
       throws SQLException {
     try (var preparedStatement =
         connection.prepareStatement(
-            "SELECT * FROM `teacup_visualization`." + ACCOUNT_WHERE_EMAIL)) {
+            "SELECT email, first_name, `teacup_visualization`.`account`.id, last_name, password "
+                + "FROM `teacup_visualization`.`account` INNER JOIN "
+                + "`teacup_visualization`.`password_history` ON "
+                + "`teacup_visualization`.`account`.id = "
+                + "`teacup_visualization`.`password_history`.account WHERE email = ? ORDER BY "
+                + "`teacup_visualization`.`password_history`.id DESC LIMIT 1")) {
       var jsonObject = new JSONObject(data);
       preparedStatement.setString(1, jsonObject.getString(EMAIL));
 
