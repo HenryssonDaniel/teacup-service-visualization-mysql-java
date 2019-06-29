@@ -72,7 +72,7 @@ dependencies {
 publishing {
     publications {
         mavenJava(MavenPublication) {
-            from components.java
+            from components.web
             artifact sourcesJar
             artifact javadocJar
 
