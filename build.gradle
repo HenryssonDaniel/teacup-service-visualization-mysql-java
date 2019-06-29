@@ -53,7 +53,7 @@ tasks.withType(Test) {
 }
 
 configurations {
-    intTestImplementation.extendsFrom implementation
+    intTestImplementation.extendsFrom testImplementation
     intTestRuntimeOnly.extendsFrom runtimeOnly
 }
 
