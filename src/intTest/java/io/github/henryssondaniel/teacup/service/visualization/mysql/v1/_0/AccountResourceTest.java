@@ -959,6 +959,12 @@ class AccountResourceTest {
     }
 
     @Override
+    public Dynamic addJspFile(String servletName, String jspFile) {
+      LOGGER.log(Level.FINE, "Add JSP file");
+      return new TestServletDynamic();
+    }
+
+    @Override
     public void addListener(String className) {
       LOGGER.log(Level.FINE, "Add listener");
     }
@@ -1132,6 +1138,12 @@ class AccountResourceTest {
     }
 
     @Override
+    public String getRequestCharacterEncoding() {
+      LOGGER.log(Level.FINE, "Get request character encoding");
+      return "";
+    }
+
+    @Override
     public RequestDispatcher getRequestDispatcher(String path) {
       LOGGER.log(Level.FINE, "Get request dispatcher");
       return new TestRequestDispatcher();
@@ -1153,6 +1165,12 @@ class AccountResourceTest {
     public Set<String> getResourcePaths(String path) {
       LOGGER.log(Level.FINE, "Get resource paths");
       return Collections.emptySet();
+    }
+
+    @Override
+    public String getResponseCharacterEncoding() {
+      LOGGER.log(Level.FINE, "Get response character encoding");
+      return "";
     }
 
     @Override
@@ -1204,6 +1222,12 @@ class AccountResourceTest {
     }
 
     @Override
+    public int getSessionTimeout() {
+      LOGGER.log(Level.FINE, "Get session timeout");
+      return 0;
+    }
+
+    @Override
     public String getVirtualServerName() {
       LOGGER.log(Level.FINE, "Get virtual server name");
       return "";
@@ -1238,6 +1262,21 @@ class AccountResourceTest {
     public boolean setInitParameter(String name, String value) {
       LOGGER.log(Level.FINE, "Set init parameter");
       return false;
+    }
+
+    @Override
+    public void setRequestCharacterEncoding(String encoding) {
+      LOGGER.log(Level.FINE, "Set request character encoding");
+    }
+
+    @Override
+    public void setResponseCharacterEncoding(String encoding) {
+      LOGGER.log(Level.FINE, "Set response character encoding");
+    }
+
+    @Override
+    public void setSessionTimeout(int sessionTimeout) {
+      LOGGER.log(Level.FINE, "Set session timeout");
     }
 
     @Override

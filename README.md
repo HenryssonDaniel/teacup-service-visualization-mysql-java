@@ -13,4 +13,10 @@ The visualization back-end does and should not know anything about where the dat
 from one database to another.
 ## How ##
 Follow the steps below:
-1. Start the service by running: gradle run
+1. Deploy the war file on your server  
+
+For developers: 
+1. Add plugin: id 'org.gretty' version 'x.x.x' 
+1. Add dependency compile 'org.jboss.resteasy:resteasy-jaxrs:x.x.x'
+1. Add dependency compile 'org.jboss.resteasy:resteasy-servlet-initializer:x.x.x'
+1. Run: gradle run

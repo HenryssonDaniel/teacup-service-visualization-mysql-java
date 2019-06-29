@@ -1,7 +1,6 @@
 plugins {
     id 'jacoco'
     id 'maven-publish'
-    id 'org.gretty' version '2.3.1'
     id 'org.sonarqube' version '2.7'
     id 'signing'
     id 'war'
@@ -58,12 +57,13 @@ configurations {
 }
 
 dependencies {
+    compile 'javax.ws.rs:javax.ws.rs-api:2.1.1'
     compile 'mysql:mysql-connector-java:8.0.16'
-    compile 'org.jboss.resteasy:resteasy-jaxrs:3.7.0.Final'
-    compile 'org.jboss.resteasy:resteasy-servlet-initializer:4.0.0.Final'
     compile 'org.json:json:20180813'
     compile 'org.mindrot:jbcrypt:0.4'
     implementation 'io.github.henryssondaniel.teacup:core:1.1.2-SNAPSHOT'
+    providedCompile 'javax.servlet:javax.servlet-api:4.0.1'
+    testCompile 'org.glassfish.jersey.core:jersey-common:2.29'
     testImplementation 'org.assertj:assertj-core:3.12.2'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.4.2'
     testImplementation 'org.mockito:mockito-core:2.28.2'
