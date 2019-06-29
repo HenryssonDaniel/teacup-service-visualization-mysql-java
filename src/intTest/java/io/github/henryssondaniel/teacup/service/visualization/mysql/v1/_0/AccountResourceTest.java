@@ -61,35 +61,47 @@ import org.junit.jupiter.api.Test;
 class AccountResourceTest {
   @Test
   void changePassword() {
-    try (var response = new AccountResource().changePassword("{}", new TestHttpServletRequest())) {
+    try (var response =
+        new AccountResource()
+            .changePassword(
+                "{\"authorized\": true, \"email\": \"\", \"password\": \"\"}",
+                new TestHttpServletRequest())) {
       assertThat(response).isNotNull();
     }
   }
 
   @Test
   void login() {
-    try (var response = new AccountResource().logIn("{}", new TestHttpServletRequest())) {
+    try (var response =
+        new AccountResource()
+            .logIn("{\"email\": \"\", \"password\": \"\"}", new TestHttpServletRequest())) {
       assertThat(response).isNotNull();
     }
   }
 
   @Test
   void recover() {
-    try (var response = new AccountResource().recover("{}", new TestHttpServletRequest())) {
+    try (var response =
+        new AccountResource().recover("{\"email\": \"\"}", new TestHttpServletRequest())) {
       assertThat(response).isNotNull();
     }
   }
 
   @Test
   void signUp() {
-    try (var response = new AccountResource().signUp("{}", new TestHttpServletRequest())) {
+    try (var response =
+        new AccountResource()
+            .signUp(
+                "{\"email\": \"\", \"firstName\": \"\", \"lastName\": \"\", \"password\": \"\"}",
+                new TestHttpServletRequest())) {
       assertThat(response).isNotNull();
     }
   }
 
   @Test
   void verify() {
-    try (var response = new AccountResource().verify("{}", new TestHttpServletRequest())) {
+    try (var response =
+        new AccountResource().verify("{\"email\": \"\"}", new TestHttpServletRequest())) {
       assertThat(response).isNotNull();
     }
   }
