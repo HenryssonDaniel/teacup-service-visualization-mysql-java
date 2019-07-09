@@ -66,7 +66,7 @@ dependencies {
     testCompile 'org.glassfish.jersey.core:jersey-common:2.29'
     testImplementation 'org.assertj:assertj-core:3.12.2'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.5.0'
-    testImplementation 'org.mockito:mockito-core:2.28.2'
+    testImplementation 'org.mockito:mockito-core:3.0.0'
 }
 
 publishing {
