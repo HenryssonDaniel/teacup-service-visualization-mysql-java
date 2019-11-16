@@ -63,7 +63,7 @@ dependencies {
     compile 'org.mindrot:jbcrypt:0.4'
     implementation 'io.github.henryssondaniel.teacup:core:1.1.5-SNAPSHOT'
     providedCompile 'javax.servlet:javax.servlet-api:4.0.1'
-    testCompile 'org.glassfish.jersey.core:jersey-common:2.29'
+    testCompile 'org.glassfish.jersey.core:jersey-common:2.29.1'
     testImplementation 'org.assertj:assertj-core:3.12.2'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.5.2'
     testImplementation 'org.mockito:mockito-core:3.1.0'
