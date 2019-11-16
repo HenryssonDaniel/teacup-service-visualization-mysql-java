@@ -59,7 +59,7 @@ configurations {
 dependencies {
     compile 'javax.ws.rs:javax.ws.rs-api:2.1.1'
     compile 'mysql:mysql-connector-java:8.0.18'
-    compile 'org.json:json:20180813'
+    compile 'org.json:json:20190722'
     compile 'org.mindrot:jbcrypt:0.4'
     implementation 'io.github.henryssondaniel.teacup:core:1.1.5-SNAPSHOT'
     providedCompile 'javax.servlet:javax.servlet-api:4.0.1'
