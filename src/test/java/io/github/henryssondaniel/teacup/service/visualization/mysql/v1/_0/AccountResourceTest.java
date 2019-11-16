@@ -6,8 +6,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 import java.sql.Connection;
@@ -86,8 +86,8 @@ class AccountResourceTest {
     verify(dataSource).getConnection();
     verifyNoMoreInteractions(dataSource);
 
-    verifyZeroInteractions(httpServletRequest);
-    verifyZeroInteractions(resultSet);
+    verifyNoInteractions(httpServletRequest);
+    verifyNoInteractions(resultSet);
   }
 
   @Test
@@ -99,7 +99,7 @@ class AccountResourceTest {
     verify(dataSource).getConnection();
     verifyNoMoreInteractions(dataSource);
 
-    verifyZeroInteractions(httpServletRequest);
+    verifyNoInteractions(httpServletRequest);
 
     verify(resultSet).close();
     verify(resultSet).next();
@@ -138,7 +138,7 @@ class AccountResourceTest {
     verify(dataSource).getConnection();
     verifyNoMoreInteractions(dataSource);
 
-    verifyZeroInteractions(httpServletRequest);
+    verifyNoInteractions(httpServletRequest);
 
     verify(resultSet, times(2)).close();
     verify(resultSet, times(2)).getInt(ID);
@@ -157,7 +157,7 @@ class AccountResourceTest {
     verify(dataSource).getConnection();
     verifyNoMoreInteractions(dataSource);
 
-    verifyZeroInteractions(httpServletRequest);
+    verifyNoInteractions(httpServletRequest);
 
     verify(resultSet, times(2)).close();
     verify(resultSet, times(2)).getInt(ID);
@@ -176,7 +176,7 @@ class AccountResourceTest {
     verify(dataSource).getConnection();
     verifyNoMoreInteractions(dataSource);
 
-    verifyZeroInteractions(httpServletRequest);
+    verifyNoInteractions(httpServletRequest);
 
     verify(resultSet).close();
     verify(resultSet).next();
@@ -192,8 +192,8 @@ class AccountResourceTest {
     verify(dataSource).getConnection();
     verifyNoMoreInteractions(dataSource);
 
-    verifyZeroInteractions(httpServletRequest);
-    verifyZeroInteractions(resultSet);
+    verifyNoInteractions(httpServletRequest);
+    verifyNoInteractions(resultSet);
   }
 
   @Test
@@ -227,7 +227,7 @@ class AccountResourceTest {
     verify(dataSource).getConnection();
     verifyNoMoreInteractions(dataSource);
 
-    verifyZeroInteractions(httpServletRequest);
+    verifyNoInteractions(httpServletRequest);
 
     verify(resultSet, times(3)).close();
     verify(resultSet).getInt(ID);
@@ -262,8 +262,8 @@ class AccountResourceTest {
     verify(dataSource).getConnection();
     verifyNoMoreInteractions(dataSource);
 
-    verifyZeroInteractions(httpServletRequest);
-    verifyZeroInteractions(resultSet);
+    verifyNoInteractions(httpServletRequest);
+    verifyNoInteractions(resultSet);
   }
 
   @Test
@@ -275,7 +275,7 @@ class AccountResourceTest {
     verify(dataSource).getConnection();
     verifyNoMoreInteractions(dataSource);
 
-    verifyZeroInteractions(httpServletRequest);
+    verifyNoInteractions(httpServletRequest);
 
     verify(resultSet).close();
     verify(resultSet).next();
@@ -308,7 +308,7 @@ class AccountResourceTest {
     verify(dataSource).getConnection();
     verifyNoMoreInteractions(dataSource);
 
-    verifyZeroInteractions(httpServletRequest);
+    verifyNoInteractions(httpServletRequest);
 
     verify(resultSet).close();
     verify(resultSet).next();
@@ -332,8 +332,6 @@ class AccountResourceTest {
     verify(httpServletRequest).getRemoteAddr();
     verifyNoMoreInteractions(httpServletRequest);
 
-    verifyZeroInteractions(httpServletRequest);
-
     verify(resultSet, times(2)).close();
     verify(resultSet).getInt(1);
     verify(resultSet, times(2)).next();
@@ -349,7 +347,7 @@ class AccountResourceTest {
     verify(dataSource).getConnection();
     verifyNoMoreInteractions(dataSource);
 
-    verifyZeroInteractions(httpServletRequest);
+    verifyNoInteractions(httpServletRequest);
 
     verify(resultSet, times(2)).close();
     verify(resultSet, times(2)).next();
@@ -365,8 +363,8 @@ class AccountResourceTest {
     verify(dataSource).getConnection();
     verifyNoMoreInteractions(dataSource);
 
-    verifyZeroInteractions(httpServletRequest);
-    verifyZeroInteractions(resultSet);
+    verifyNoInteractions(httpServletRequest);
+    verifyNoInteractions(resultSet);
   }
 
   @Test
@@ -395,7 +393,7 @@ class AccountResourceTest {
     verify(dataSource).getConnection();
     verifyNoMoreInteractions(dataSource);
 
-    verifyZeroInteractions(httpServletRequest);
+    verifyNoInteractions(httpServletRequest);
 
     verify(resultSet).close();
     verify(resultSet).next();
@@ -411,8 +409,8 @@ class AccountResourceTest {
     verify(dataSource).getConnection();
     verifyNoMoreInteractions(dataSource);
 
-    verifyZeroInteractions(httpServletRequest);
-    verifyZeroInteractions(resultSet);
+    verifyNoInteractions(httpServletRequest);
+    verifyNoInteractions(resultSet);
   }
 
   private Response callChangePassword() {
