@@ -7,7 +7,7 @@ plugins {
 }
 
 group = 'io.github.henryssondaniel.teacup.service.visualization'
-version = '1.0.4-SNAPSHOT'
+version = '1.0.4'
 
 sourceSets {
     intTest {
@@ -65,7 +65,7 @@ dependencies {
     implementation 'mysql:mysql-connector-java:8.0.18'
     implementation 'org.json:json:20190722'
     implementation 'org.mindrot:jbcrypt:0.4'
-    implementation 'io.github.henryssondaniel.teacup:core:1.2.1-SNAPSHOT'
+    implementation 'io.github.henryssondaniel.teacup:core:1.2.0'
     providedCompile 'javax.servlet:javax.servlet-api:4.0.1'
     testImplementation 'org.glassfish.jersey.core:jersey-common:2.29.1'
     testImplementation 'org.assertj:assertj-core:3.14.0'
