@@ -1,3 +1,13 @@
+#### 1.0.4
+- 2019-11-24
+- Run with Java 13
+- Use AssertJ version 3.14.0, stepped from 3.12.2
+- Use Gradle version 6.0.1, stepped from 5.6.2
+- Use Jersey version 2.29.1, stepped from 2.29
+- Use JSON version 20190722, stepped from 20180813
+- Use JUnit version 5.6.0-M1, stepped from 5.5.2
+- Use MySQL connector 8.0.18, stepped from 8.0.16
+- Use Teacup Core version 1.2.0, stepped from 1.1.4
 #### 1.0.3
 - 2019-10-12
 - Use Gradle version 5.6.2, stepped from 5.6
